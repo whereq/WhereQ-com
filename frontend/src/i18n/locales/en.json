@@ -1,0 +1,391 @@
+{
+  "tagline": "MAP OS",
+  "search": {
+    "placeholder": "Where to?  Streets, places, memorials, friends…",
+    "locked": "Sign in to search",
+    "signinTitle": "Sign in to search",
+    "signinText": "Searching streets & addresses uses Google Places, and your radius and categories are kept on your account. Sign in to use them.",
+    "signinLater": "Not now",
+    "kickerAddress": "Address",
+    "kickerSchool": "School",
+    "kickerPlace": "Place",
+    "nearbyAround": "What is around it",
+    "close": "Close",
+    "reopenCard": "Show the card again"
+  },
+  "searchFilters": {
+    "all": "Everything",
+    "gas": "Gas stations",
+    "nearest": "Nearest",
+    "cheapest": "Cheapest",
+    "gasGated": "Sign in to see gas prices"
+  },
+  "nearby": {
+    "tab": "Nearby",
+    "radius": "Radius",
+    "categories": "Categories",
+    "all": "All",
+    "loading": "Looking around…",
+    "error": "Could not load what is nearby",
+    "empty": "Nothing nearby in this radius",
+    "noCentre": "Move the map to search around you",
+    "count": "{{count}} nearby",
+    "recent": "recent",
+    "news": "News & events",
+    "alerts": "Alerts",
+    "hint": "Sign in to keep your radius and categories"
+  },
+  "sidebarSearch": {
+    "placeholder": "Search addresses & places…",
+    "searching": "Searching…",
+    "empty": "No results found",
+    "signin": "Sign in to search streets & addresses",
+    "clear": "Clear search",
+    "locked": "Sign in to search addresses & places"
+  },
+  "signin": "Sign in",
+  "signout": "Sign out",
+  "guest": "Guest",
+  "nav": {
+    "map": "Map",
+    "schools": "Schools",
+    "guides": "Guides",
+    "memorials": "Memorials",
+    "social": "Social",
+    "routes": "Routes",
+    "cards": "Cards"
+  },
+  "local": {
+    "title": "Local on the map",
+    "news": "News",
+    "events": "Events",
+    "stories": "Stories",
+    "topics": "Topics",
+    "clear": "Clear",
+    "more": "Filters",
+    "less": "Hide",
+    "category": "Category",
+    "source": "Source",
+    "results": "{{count}} nearby",
+    "zoomHint": "Zoom in to see more",
+    "range": {
+      "24h": "24h",
+      "7d": "7d",
+      "30d": "30d",
+      "all": "All"
+    }
+  },
+  "quick": {
+    "food": "Food",
+    "coffee": "Coffee",
+    "fuel": "Fuel",
+    "parking": "Parking",
+    "stays": "Stays",
+    "more": "More"
+  },
+  "layers": {
+    "streets": "Streets",
+    "satellite": "Satellite",
+    "terrain": "Terrain",
+    "transit": "Transit",
+    "bike": "Bike",
+    "traffic": "Traffic"
+  },
+  "sect": {
+    "nbhd": "Neighborhood",
+    "essentials": "Local Essentials",
+    "quick": "Quick Categories",
+    "layers": "Map Style",
+    "filters": "On The Map",
+    "planner": "Trip Planner",
+    "friends": "Friends Nearby",
+    "saved": "Saved Places",
+    "log": "Today's Routes"
+  },
+  "ess": {
+    "schools": "Schools",
+    "pharmacies": "Pharmacies",
+    "clinics": "Walk-in clinics",
+    "plazas": "Plazas",
+    "libraries": "Libraries"
+  },
+  "nbhd": {
+    "name": "Downtown Toronto",
+    "region": "Toronto · CA",
+    "walk": "Walk",
+    "transit": "Transit",
+    "bike": "Bike",
+    "greenery": "Greenery",
+    "show": "Show boundary",
+    "catchment": "Catchment area",
+    "clear": "Clear"
+  },
+  "filters": {
+    "friends": "Friends",
+    "memorial": "Memorial Places",
+    "hazards": "Hazards & Reports",
+    "guides": "Curated Guides",
+    "routes": "Daily Routes",
+    "weather": "Weather Overlay",
+    "areas": "Administrative Areas"
+  },
+  "planner": {
+    "from": "Current location",
+    "to": "Pier Coffee, Old Town",
+    "via": "+ Add stop",
+    "go": "Start",
+    "alt": "Routes",
+    "save": "Save"
+  },
+  "route": {
+    "turn": "Turn right onto Hawthorne Ave",
+    "eta": "ETA",
+    "stop": "Stop"
+  },
+  "poi": {
+    "directions": "Directions →",
+    "share": "Share",
+    "save": "Save",
+    "saved": "Saved ✓",
+    "openSchools": "Open in Schools",
+    "readMore": "Read more ↗",
+    "confirmHazard": "Still here ✔",
+    "confirmed": "✔ Confirmed",
+    "confirmedCount": "✔ {{count}} confirmed",
+    "clearPin": "Remove pin"
+  },
+  "friends": {
+    "empty": "No friends sharing location right now",
+    "sharing": "Sharing location"
+  },
+  "crumb": {
+    "city": "Toronto",
+    "area": "Downtown Toronto · CA"
+  },
+  "geo": {
+    "containedIn": "Contained in",
+    "showOnMap": "Show this area on the map",
+    "dataBy": "Data",
+    "sourceLink": "source",
+    "kind": {
+      "country": "Country",
+      "province": "Province",
+      "region": "Region",
+      "municipality": "Municipality",
+      "city": "City",
+      "town": "Town",
+      "district": "District",
+      "ward": "Ward",
+      "neighbourhood": "Neighbourhood"
+    }
+  },
+  "school": {
+    "catchment": "Catchment",
+    "catchmentArea": "area served",
+    "showCatchment": "Show catchment",
+    "signinForCatchment": "Sign in to see the catchment"
+  },
+  "legend": {
+    "me": "You",
+    "friends": "Friends",
+    "memorial": "Memorial",
+    "hazard": "Hazard"
+  },
+  "footer": {
+    "copy": "© 2026 whereq.com · all things place",
+    "links": {
+      "about": "About",
+      "api": "API",
+      "privacy": "Privacy",
+      "status": "Status"
+    },
+    "live": "Live · crawled",
+    "attribution": "Map data © Google · Places data © OpenStreetMap contributors · Fuel & geography crawled from whereq.cloud"
+  },
+  "hero": {
+    "badge": "Now available in 50+ countries",
+    "title": {
+      "line1": "Discover the World",
+      "line2": "Beyond the Map"
+    },
+    "subtitle": "whereq transforms how you experience places — from neighbourhood guides and hidden histories to social connections and personal journeys.",
+    "cta": {
+      "primary": "Start Exploring",
+      "secondary": "Watch Demo"
+    },
+    "stat": {
+      "places": "Places",
+      "users": "Users",
+      "countries": "Countries"
+    }
+  },
+  "services": {
+    "tag": "What We Offer",
+    "title": "Explore Every Dimension of a Place",
+    "subtitle": "Eight powerful ways to experience, understand, and share the world around you.",
+    "neighbourhood": {
+      "title": "Neighbourhood Guide",
+      "desc": "Discover what makes each neighbourhood unique with local insights, ratings, and expert community guides."
+    },
+    "memorial": {
+      "title": "Memorial Stories",
+      "desc": "Uncover the hidden histories and untold stories behind significant places around the world."
+    },
+    "social": {
+      "title": "Social Places",
+      "desc": "Connect with people who share your love for specific locations and local experiences."
+    },
+    "route": {
+      "title": "Route Tracker",
+      "desc": "Log and share your daily journeys, discover patterns in your movement, and explore others' paths."
+    },
+    "trails": {
+      "title": "Nature Trails",
+      "desc": "Explore curated outdoor adventures with real-time trail conditions and community reviews."
+    },
+    "timetravel": {
+      "title": "Time Travel",
+      "desc": "See how any location has transformed over decades with stunning historical imagery overlays."
+    },
+    "pulse": {
+      "title": "Local Pulse",
+      "desc": "Stay informed about events, openings, and happenings in your area right now."
+    },
+    "journal": {
+      "title": "Geo Journal",
+      "desc": "Create location-tagged memories, photos, and stories permanently tied to places you've been."
+    },
+    "learnmore": "Learn more"
+  },
+  "spotlight": {
+    "tag": "Featured Service",
+    "title": "Know Your Neighbourhood Like a Local",
+    "subtitle": "Our Neighbourhood Guide brings together crowd-sourced data, expert reviews, and AI-powered insights to give you the full picture of any area.",
+    "features": [
+      "Real-time safety and walkability scores",
+      "Local business spotlights and hidden gems",
+      "School ratings and family-friendliness index",
+      "Historical context and neighbourhood evolution"
+    ],
+    "cta": "Explore Neighbourhoods"
+  },
+  "howitworks": {
+    "tag": "How It Works",
+    "title": "Three Steps to a Deeper World",
+    "steps": [
+      {
+        "title": "Drop a Pin",
+        "desc": "Choose any location on the globe — your home, a dream destination, or somewhere you're curious about."
+      },
+      {
+        "title": "Explore Deep",
+        "desc": "Unlock stories, guides, social connections, and data layers that reveal what makes that place truly unique."
+      },
+      {
+        "title": "Share & Connect",
+        "desc": "Add your own stories, connect with local communities, and build a richer map for everyone."
+      }
+    ]
+  },
+  "datasource": {
+    "tag": "Where the Data Comes From",
+    "title": "Crawled, Not Typed",
+    "subtitle": "Nothing on the map was typed in by hand. Our crawler pulls it, refreshes it, and puts it where it belongs.",
+    "whereqcloud": {
+      "title": "whereq.cloud",
+      "desc": "Fuel stations, live prices and the administrative geography — provinces, cities, wards, neighbourhoods — with their real outlines."
+    },
+    "osm": {
+      "title": "OpenStreetMap",
+      "desc": "The places around you: coffee, food, parking, pharmacies, clinics, libraries and plazas."
+    },
+    "feeds": {
+      "title": "News & Events Feeds",
+      "desc": "Local news, events, stories and community topics, crawled from RSS and JSON sources and placed on the map."
+    }
+  },
+  "stats": {
+    "tag": "Growing Together",
+    "title": "Mapping the World, Together",
+    "items": {
+      "places": "Places Documented",
+      "users": "Active Users",
+      "countries": "Countries Covered",
+      "stories": "Stories Shared"
+    }
+  },
+  "cta": {
+    "tag": "Stay in the Loop",
+    "title": "Be the First to Explore",
+    "subtitle": "Get early access, feature updates, and location discoveries delivered to your inbox.",
+    "placeholder": "Enter your email address",
+    "button": "Subscribe"
+  },
+  "about": {
+    "title": "About"
+  },
+  "toast": {
+    "dismiss": "Dismiss",
+    "requestFailed": "Something went wrong (HTTP {{status}}). Please try again.",
+    "network": "Cannot reach the server. Check your connection and try again.",
+    "signInForPrices": "Sign in to see live fuel prices.",
+    "reportSubmitted": "Report submitted — thank you.",
+    "mapsFailed": "The map could not load. Please try again."
+  },
+  "pages": {
+    "guides": {
+      "title": "Neighbourhood Guides",
+      "subtitle": "Explore scored neighbourhoods with walkability, transit, and local insights."
+    },
+    "memorials": {
+      "title": "Memorial Stories",
+      "subtitle": "Discover the hidden histories and personal stories tied to meaningful places."
+    },
+    "social": {
+      "title": "Social",
+      "subtitle": "Connect with friends and discover who's nearby."
+    },
+    "routes": {
+      "title": "Routes",
+      "subtitle": "Track your journeys, explore public routes, and share your adventures.",
+      "error": "Could not load routes."
+    }
+  },
+  "cards": {
+    "title": "My cards",
+    "subtitle": "Your own card for a place — and what is around it.",
+    "signinText": "Sign in to make a card.",
+    "new": "New card",
+    "loading": "Loading your cards...",
+    "empty": "No cards yet. Make one for a place you care about.",
+    "count": "{{count}} card",
+    "count_other": "{{count}} cards",
+    "name": "Name",
+    "namePlaceholder": "The name on the card",
+    "nameRequired": "The card needs a name.",
+    "description": "Description",
+    "descriptionPlaceholder": "What someone should know about it",
+    "profile": "Profile",
+    "kindBusiness": "Business",
+    "kindPerson": "Person",
+    "category": "Category",
+    "categoryNone": "None",
+    "address": "Address",
+    "addressPlaceholder": "Search for the address",
+    "addressRequired": "Search for the address the card is about.",
+    "addressFailed": "That address could not be resolved.",
+    "radius": "Radius",
+    "categoryCount": "{{count}} categories",
+    "categoryCount_other": "{{count}} categories",
+    "allCategories": "every category",
+    "logo": "Logo or photo (a link)",
+    "accent": "Accent colour",
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "view": "Open",
+    "confirmDelete": "Delete this card?",
+    "saveFailed": "The card could not be saved."
+  }
+}

@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 40" fill="none">
+  <defs>
+    <linearGradient id="fPinGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#10b981"/>
+    </linearGradient>
+    <linearGradient id="fGlobeGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+    <clipPath id="fPinClip">
+      <path d="M16 1C9.35 1 4 6.35 4 13C4 22 16 39 16 39C16 39 28 22 28 13C28 6.35 22.65 1 16 1Z"/>
+    </clipPath>
+  </defs>
+
+  <path d="M16 1C9.35 1 4 6.35 4 13C4 22 16 39 16 39C16 39 28 22 28 13C28 6.35 22.65 1 16 1Z"
+        fill="url(#fPinGrad)"/>
+
+  <circle cx="16" cy="13" r="9" fill="url(#fGlobeGrad)" opacity="0.9" clip-path="url(#fPinClip)"/>
+
+  <g clip-path="url(#fPinClip)" stroke="rgba(255,255,255,0.35)" stroke-width="0.6" fill="none">
+    <ellipse cx="16" cy="10" rx="9" ry="2"/>
+    <ellipse cx="16" cy="13" rx="9" ry="3"/>
+    <ellipse cx="16" cy="16" rx="9" ry="2"/>
+  </g>
+
+  <g clip-path="url(#fPinClip)" stroke="rgba(255,255,255,0.35)" stroke-width="0.6" fill="none">
+    <ellipse cx="16" cy="13" rx="2" ry="9"/>
+    <ellipse cx="16" cy="13" rx="5" ry="9"/>
+    <ellipse cx="16" cy="13" rx="7" ry="9"/>
+  </g>
+
+  <circle cx="16" cy="13" r="9" stroke="rgba(255,255,255,0.2)" stroke-width="0.8" fill="none" clip-path="url(#fPinClip)"/>
+
+  <circle cx="16" cy="13" r="2.5" fill="white" opacity="0.95"/>
+  <circle cx="16" cy="13" r="1.2" fill="url(#fPinGrad)"/>
+</svg>

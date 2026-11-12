@@ -1,0 +1,389 @@
+{
+  "tagline": "地图操作系统",
+  "search": {
+    "placeholder": "去哪儿?  街道、地点、纪念地、好友…",
+    "locked": "登录后搜索",
+    "signinTitle": "登录后搜索",
+    "signinText": "搜索街道和地址需要 Google Places,你的半径和分类保存在你的账户中。登录后即可使用。",
+    "signinLater": "暂不",
+    "kickerAddress": "地址",
+    "kickerSchool": "学校",
+    "kickerPlace": "地点",
+    "nearbyAround": "周边有什么",
+    "close": "关闭",
+    "reopenCard": "再次显示该地点的卡片"
+  },
+  "searchFilters": {
+    "all": "全部",
+    "gas": "加油站",
+    "nearest": "最近",
+    "cheapest": "最便宜",
+    "gasGated": "登录后查看油价"
+  },
+  "nearby": {
+    "tab": "附近",
+    "radius": "半径",
+    "categories": "分类",
+    "all": "全部",
+    "loading": "正在查找…",
+    "error": "无法加载附近内容",
+    "empty": "此半径内没有内容",
+    "noCentre": "移动地图以查看周边",
+    "count": "附近 {{count}} 项",
+    "recent": "最近",
+    "news": "新闻与活动",
+    "alerts": "提醒",
+    "hint": "登录后可保存你的半径和分类"
+  },
+  "sidebarSearch": {
+    "placeholder": "搜索地址和地点…",
+    "searching": "正在查找…",
+    "empty": "没有找到结果",
+    "signin": "登录后可搜索街道和地址",
+    "clear": "清除搜索",
+    "locked": "登录后可搜索地址和地点"
+  },
+  "signin": "登录",
+  "signout": "退出",
+  "guest": "访客",
+  "nav": {
+    "map": "地图",
+    "schools": "学校",
+    "guides": "向导",
+    "memorials": "纪念地",
+    "social": "社交",
+    "routes": "路线",
+    "cards": "卡片"
+  },
+  "local": {
+    "title": "地图上的本地动态",
+    "news": "新闻",
+    "events": "活动",
+    "stories": "社区故事",
+    "topics": "本地话题",
+    "clear": "清除",
+    "more": "筛选",
+    "less": "收起",
+    "category": "类别",
+    "source": "来源",
+    "results": "附近 {{count}} 条",
+    "zoomHint": "放大查看更多",
+    "range": {
+      "24h": "24小时",
+      "7d": "7天",
+      "30d": "30天",
+      "all": "全部"
+    }
+  },
+  "quick": {
+    "food": "餐饮",
+    "coffee": "咖啡",
+    "fuel": "加油",
+    "parking": "停车",
+    "stays": "住宿",
+    "more": "更多"
+  },
+  "layers": {
+    "streets": "街道",
+    "satellite": "卫星",
+    "terrain": "地形",
+    "transit": "公交",
+    "bike": "骑行",
+    "traffic": "路况"
+  },
+  "sect": {
+    "nbhd": "社区",
+    "essentials": "社区设施",
+    "quick": "快速分类",
+    "layers": "地图样式",
+    "filters": "地图图层",
+    "planner": "行程规划",
+    "friends": "附近好友",
+    "saved": "已收藏",
+    "log": "今日轨迹"
+  },
+  "ess": {
+    "schools": "学校",
+    "pharmacies": "药店",
+    "clinics": "门诊",
+    "plazas": "广场",
+    "libraries": "图书馆"
+  },
+  "nbhd": {
+    "name": "多伦多市中心",
+    "region": "多伦多 · 安大略省",
+    "walk": "步行",
+    "transit": "公交",
+    "bike": "骑行",
+    "greenery": "绿化",
+    "show": "显示边界",
+    "catchment": "学区",
+    "clear": "清除"
+  },
+  "filters": {
+    "friends": "好友",
+    "memorial": "纪念地",
+    "hazards": "事件与报告",
+    "guides": "精选向导",
+    "routes": "日常路线",
+    "weather": "天气图层",
+    "areas": "行政区划"
+  },
+  "planner": {
+    "from": "当前位置",
+    "to": "Pier Coffee · 老城",
+    "via": "+ 添加站点",
+    "go": "出发",
+    "alt": "线路",
+    "save": "保存"
+  },
+  "route": {
+    "turn": "右转进入 Hawthorne Ave",
+    "eta": "预计",
+    "stop": "结束"
+  },
+  "poi": {
+    "directions": "导航 →",
+    "share": "分享",
+    "save": "收藏",
+    "saved": "已收藏 ✓",
+    "openSchools": "在学校应用中打开",
+    "readMore": "阅读更多 ↗",
+    "confirmHazard": "仍然存在 ✔",
+    "confirmed": "✔ 已确认",
+    "confirmedCount": "✔ {{count}} 人确认",
+    "clearPin": "移除标记"
+  },
+  "friends": {
+    "empty": "目前没有好友分享位置",
+    "sharing": "正在分享位置"
+  },
+  "crumb": {
+    "city": "多伦多",
+    "area": "多伦多市中心 · 安大略省"
+  },
+  "geo": {
+    "containedIn": "所属区域",
+    "showOnMap": "在地图上显示该区域",
+    "dataBy": "数据",
+    "sourceLink": "来源",
+    "kind": {
+      "country": "国家",
+      "province": "省",
+      "region": "地区",
+      "municipality": "市镇",
+      "city": "城市",
+      "town": "城镇",
+      "district": "区",
+      "ward": "选区",
+      "neighbourhood": "街区"
+    }
+  },
+  "school": {
+    "catchment": "学区",
+    "catchmentArea": "服务范围",
+    "showCatchment": "显示学区",
+    "signinForCatchment": "登录后查看学区"
+  },
+  "legend": {
+    "me": "我",
+    "friends": "好友",
+    "memorial": "纪念地",
+    "hazard": "警告"
+  },
+  "footer": {
+    "copy": "© 2026 whereq.com · 一切关于地点",
+    "links": {
+      "about": "关于",
+      "api": "API",
+      "privacy": "隐私",
+      "status": "状态"
+    },
+    "live": "实时 · 已爬取",
+    "attribution": "地图数据 © Google · 地点数据 © OpenStreetMap 贡献者 · 加油站与行政地理数据爬取自 whereq.cloud"
+  },
+  "hero": {
+    "badge": "现已覆盖50多个国家",
+    "title": {
+      "line1": "探索这个世界",
+      "line2": "超越地图边界"
+    },
+    "subtitle": "whereq 改变了您体验地方的方式 — 从街区导览和隐藏历史，到社交连接和个人旅程。",
+    "cta": {
+      "primary": "开始探索",
+      "secondary": "观看演示"
+    },
+    "stat": {
+      "places": "地点",
+      "users": "用户",
+      "countries": "国家"
+    }
+  },
+  "services": {
+    "tag": "我们提供",
+    "title": "探索地点的每一个维度",
+    "subtitle": "八种强大的方式，让您体验、了解并分享身边的世界。",
+    "neighbourhood": {
+      "title": "街区导览",
+      "desc": "通过本地洞察、评分和专家社区导览，发现每个街区的独特之处。"
+    },
+    "memorial": {
+      "title": "纪念故事",
+      "desc": "揭开世界各地重要地点背后隐藏的历史和未述说的故事。"
+    },
+    "social": {
+      "title": "社交地点",
+      "desc": "与那些和您一样热爱特定地点和本地体验的人建立联系。"
+    },
+    "route": {
+      "title": "路线追踪",
+      "desc": "记录并分享您的日常旅程，发现您移动的规律，探索他人的路径。"
+    },
+    "trails": {
+      "title": "自然小径",
+      "desc": "探索精心策划的户外冒险，获取实时步道状况和社区评价。"
+    },
+    "timetravel": {
+      "title": "时空穿越",
+      "desc": "通过令人惊叹的历史影像叠加，见证任何地点数十年来的变迁。"
+    },
+    "pulse": {
+      "title": "本地脉搏",
+      "desc": "实时掌握您所在区域的活动、新开业和最新动态。"
+    },
+    "journal": {
+      "title": "地理日志",
+      "desc": "创建永久与您去过的地方绑定的位置标记回忆、照片和故事。"
+    },
+    "learnmore": "了解更多"
+  },
+  "spotlight": {
+    "tag": "精选服务",
+    "title": "像本地人一样了解您的街区",
+    "subtitle": "我们的街区导览整合了众包数据、专家评价和AI驱动的洞察，为您提供任何地区的全貌。",
+    "features": [
+      "实时安全和步行性评分",
+      "本地商业聚焦和隐藏宝藏",
+      "学校评级和家庭友好度指数",
+      "历史背景和街区演变"
+    ],
+    "cta": "探索街区"
+  },
+  "howitworks": {
+    "tag": "使用方式",
+    "title": "三步深入了解世界",
+    "steps": [
+      {
+        "title": "标记位置",
+        "desc": "选择地球上的任何地点 — 您的家、梦想目的地或您感到好奇的地方。"
+      },
+      {
+        "title": "深度探索",
+        "desc": "解锁揭示该地点真正独特之处的故事、导览、社交连接和数据层。"
+      },
+      {
+        "title": "分享与连接",
+        "desc": "添加您自己的故事，与本地社区连接，为每个人构建更丰富的地图。"
+      }
+    ]
+  },
+  "datasource": {
+    "tag": "数据来源",
+    "title": "爬取而来，而非手工录入",
+    "subtitle": "地图上的每一个数据都不是手工录入的。我们的爬虫负责抓取、刷新，并把它们放到正确的位置。",
+    "whereqcloud": {
+      "title": "whereq.cloud",
+      "desc": "加油站、实时油价，以及行政区划——省、市、区、街区——并带有真实的边界轮廓。"
+    },
+    "osm": {
+      "title": "OpenStreetMap",
+      "desc": "你身边的地点：咖啡、餐饮、停车、药房、诊所、图书馆与广场。"
+    },
+    "feeds": {
+      "title": "新闻与活动信息源",
+      "desc": "本地新闻、活动、故事与社区话题，从 RSS 与 JSON 信息源爬取后标注到地图上。"
+    }
+  },
+  "stats": {
+    "tag": "共同成长",
+    "title": "携手绘制世界地图",
+    "items": {
+      "places": "已记录地点",
+      "users": "活跃用户",
+      "countries": "覆盖国家",
+      "stories": "分享故事"
+    }
+  },
+  "cta": {
+    "tag": "保持联系",
+    "title": "率先探索",
+    "subtitle": "获取早期访问权限、功能更新和位置发现，直接发送到您的邮箱。",
+    "placeholder": "输入您的邮箱地址",
+    "button": "订阅"
+  },
+  "about": {
+    "title": "关于"
+  },
+  "toast": {
+    "dismiss": "关闭",
+    "requestFailed": "出错了（HTTP {{status}}）。请重试。",
+    "network": "无法连接服务器。请检查网络后重试。",
+    "signInForPrices": "登录即可查看实时油价。",
+    "reportSubmitted": "报告已提交，谢谢。",
+    "mapsFailed": "地图加载失败，请重试。"
+  },
+  "pages": {
+    "guides": {
+      "title": "街区导览",
+      "subtitle": "探索带有步行性、交通和本地洞察评分的街区。"
+    },
+    "memorials": {
+      "title": "纪念故事",
+      "subtitle": "发现与有意义地点相关的隐藏历史和个人故事。"
+    },
+    "social": {
+      "title": "社交",
+      "subtitle": "与好友联系，发现谁在附近。"
+    },
+    "routes": {
+      "title": "路线",
+      "subtitle": "追踪您的旅程，探索公共路线，分享您的冒险。",
+      "error": "无法加载路线。"
+    }
+  },
+  "cards": {
+    "title": "我的卡片",
+    "subtitle": "为你喜欢的地方做一张卡片 —— 以及它周围的一切。",
+    "signinText": "登录后即可创建卡片。",
+    "new": "新建卡片",
+    "loading": "正在加载你的卡片…",
+    "empty": "还没有卡片。为你在意的地方创建一张吧。",
+    "count": "{{count}} 张卡片",
+    "name": "名称",
+    "namePlaceholder": "卡片上的名称",
+    "nameRequired": "卡片需要一个名称。",
+    "description": "描述",
+    "descriptionPlaceholder": "关于它，别人应该知道的事",
+    "profile": "类型",
+    "kindBusiness": "商家",
+    "kindPerson": "个人",
+    "category": "类别",
+    "categoryNone": "无",
+    "address": "地址",
+    "addressPlaceholder": "搜索地址",
+    "addressRequired": "请搜索这张卡片对应的地址。",
+    "addressFailed": "无法解析该地址。",
+    "radius": "半径",
+    "categoryCount": "{{count}} 个类别",
+    "allCategories": "全部分类",
+    "logo": "Logo 或照片（链接）",
+    "accent": "主题色",
+    "save": "保存",
+    "cancel": "取消",
+    "edit": "编辑",
+    "delete": "删除",
+    "view": "打开",
+    "confirmDelete": "删除这张卡片？",
+    "saveFailed": "卡片未能保存。"
+  }
+}

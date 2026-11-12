@@ -1,0 +1,15 @@
+{
+  "name": "whereq",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "yarn workspace whereq-frontend dev",
+    "typecheck": "yarn workspace whereq-frontend typecheck",
+    "build": "yarn workspace whereq-frontend build",
+    "preview": "yarn workspace whereq-frontend preview",
+    "install:backend": "cd backend && python -m venv .venv && .venv/bin/pip install -r requirements.txt"
+  }
+}

@@ -1,0 +1,223 @@
+# =============================================================================
+# whereq.com — Docker Compose (self-contained)
+# =============================================================================
+# Brings up the whole stack locally: PostgreSQL/PostGIS, the API, the
+# background crawler and the nginx-served SPA.
+#
+# Usage:
+#   cp docker/.env.example docker/.env     # fill in the values
+#   docker compose -f docker/docker-compose.yml up -d --build
+#
+# The stack listens on:
+#   http://localhost:3743   the app (SPA + proxied API)
+#   http://localhost:8002   the API directly
+#
+# Secrets are never committed. Every value below comes from the environment
+# and the stack REFUSES TO START when a required one is missing, rather than
+# falling back to a default that would look like a real config.
+# =============================================================================
+
+name: whereq-com
+
+networks:
+  whereq-network:
+    name: whereq-com-network
+
+services:
+  # ---------------------------------------------------------------------------
+  # Database — PostgreSQL 17 with PostGIS
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgis/postgis:17-3.5
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-whereq}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in docker/.env}
+      POSTGRES_DB: ${POSTGRES_DB:-whereq}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - whereq-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-whereq} -d ${POSTGRES_DB:-whereq}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # ---------------------------------------------------------------------------
+  # Migrations — runs Alembic to head, then exits. The API waits for it.
+  # ---------------------------------------------------------------------------
+  migrate:
+    image: whereq-com-api:latest
+    build:
+      context: ..
+      dockerfile: docker/api/Dockerfile
+    restart: "no"
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-whereq}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-whereq}
+      DATABASE_URL_SYNC: postgresql://${POSTGRES_USER:-whereq}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-whereq}
+      SECRET_KEY: ${SECRET_KEY:?set SECRET_KEY in docker/.env}
+      APP_ENV: production
+    networks:
+      - whereq-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # API Layer
+  # ---------------------------------------------------------------------------
+  api:
+    image: whereq-com-api:latest
+    build:
+      context: ..
+      dockerfile: docker/api/Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-whereq}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-whereq}
+      DATABASE_URL_SYNC: postgresql://${POSTGRES_USER:-whereq}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-whereq}
+      SECRET_KEY: ${SECRET_KEY:?set SECRET_KEY in docker/.env}
+      APP_ENV: production
+      CORS_ORIGINS: '["http://localhost:3743","http://localhost:5173"]'
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
+      # Server-side key for backend Google web-service calls (no referrer lock).
+      GOOGLE_MAPS_SERVER_KEY: ${GOOGLE_MAPS_SERVER_KEY:-}
+      # whereq.cloud data feeds (fuel stations + prices). The key is used
+      # server-side only — it is never built into the frontend bundle.
+      WHEREQ_CLOUD_API_KEY: ${WHEREQ_CLOUD_API_KEY:-}
+      FUEL_CRAWL_ENABLED: ${FUEL_CRAWL_ENABLED:-true}
+      FUEL_CRAWL_TARGETS: ${FUEL_CRAWL_TARGETS:-CA,US}
+      FUEL_CRAWL_TARGETS_PER_TICK: ${FUEL_CRAWL_TARGETS_PER_TICK:-1}
+      FUEL_CRAWL_CHECK_SECONDS: ${FUEL_CRAWL_CHECK_SECONDS:-3600}
+      FUEL_CRAWL_INTERVAL_HOURS: ${FUEL_CRAWL_INTERVAL_HOURS:-6}
+      FUEL_CRAWL_PAGE_SIZE: ${FUEL_CRAWL_PAGE_SIZE:-500}
+      FUEL_CRAWL_MAX_STATIONS: ${FUEL_CRAWL_MAX_STATIONS:-60000}
+      FUEL_CRAWL_MIN_INTERVAL: ${FUEL_CRAWL_MIN_INTERVAL:-2.2}
+      FUEL_CRAWL_MAX_RETRIES: ${FUEL_CRAWL_MAX_RETRIES:-5}
+      FUEL_PRICES_ENABLED: ${FUEL_PRICES_ENABLED:-true}
+      FUEL_PRICES_REGIONS: ${FUEL_PRICES_REGIONS:-ca,us}
+      FUEL_PRICES_INTERVAL_HOURS: ${FUEL_PRICES_INTERVAL_HOURS:-24}
+      FUEL_PRICES_CHECK_SECONDS: ${FUEL_PRICES_CHECK_SECONDS:-3600}
+      # OIDC — leave KEYCLOAK_URL empty to run without authentication.
+      KEYCLOAK_URL: ${KEYCLOAK_URL:-}
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-whereq}
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-whereq-spa}
+      KEYCLOAK_ADMIN_CLIENT_ID: ${KEYCLOAK_ADMIN_CLIENT_ID:-whereq-backend}
+      KEYCLOAK_ADMIN_CLIENT_SECRET: ${KEYCLOAK_ADMIN_CLIENT_SECRET:-}
+    ports:
+      # Override with API_PORT if 8002 is already taken on your machine.
+      - "${API_PORT:-8002}:8002"
+    networks:
+      - whereq-network
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ---------------------------------------------------------------------------
+  # Crawler — the app's retrieval layer. Reuses the API image and runs the
+  # self-contained scheduler loop instead of uvicorn: it crawls whereq.cloud
+  # (fuel stations, prices, administrative geography), OpenStreetMap (the POI
+  # layer) and the RSS/JSON content feeds. No host cron needed.
+  # ---------------------------------------------------------------------------
+  crawler:
+    image: whereq-com-api:latest
+    restart: unless-stopped
+    command: ["python", "-m", "app.crawler.scheduler"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-whereq}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-whereq}
+      APP_ENV: production
+      SECRET_KEY: ${SECRET_KEY:?set SECRET_KEY in docker/.env}
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
+      GOOGLE_MAPS_SERVER_KEY: ${GOOGLE_MAPS_SERVER_KEY:-}
+      WHEREQ_CLOUD_API_KEY: ${WHEREQ_CLOUD_API_KEY:-}
+      FUEL_CRAWL_ENABLED: ${FUEL_CRAWL_ENABLED:-true}
+      FUEL_CRAWL_TARGETS: ${FUEL_CRAWL_TARGETS:-CA,US}
+      FUEL_CRAWL_TARGETS_PER_TICK: ${FUEL_CRAWL_TARGETS_PER_TICK:-1}
+      FUEL_CRAWL_CHECK_SECONDS: ${FUEL_CRAWL_CHECK_SECONDS:-3600}
+      FUEL_CRAWL_INTERVAL_HOURS: ${FUEL_CRAWL_INTERVAL_HOURS:-6}
+      FUEL_CRAWL_PAGE_SIZE: ${FUEL_CRAWL_PAGE_SIZE:-500}
+      FUEL_CRAWL_MAX_STATIONS: ${FUEL_CRAWL_MAX_STATIONS:-60000}
+      FUEL_CRAWL_MIN_INTERVAL: ${FUEL_CRAWL_MIN_INTERVAL:-2.2}
+      FUEL_CRAWL_MAX_RETRIES: ${FUEL_CRAWL_MAX_RETRIES:-5}
+      FUEL_PRICES_ENABLED: ${FUEL_PRICES_ENABLED:-true}
+      FUEL_PRICES_REGIONS: ${FUEL_PRICES_REGIONS:-ca,us}
+      FUEL_PRICES_INTERVAL_HOURS: ${FUEL_PRICES_INTERVAL_HOURS:-24}
+      FUEL_PRICES_CHECK_SECONDS: ${FUEL_PRICES_CHECK_SECONDS:-3600}
+      # Administrative geography (whereq.cloud) — the areas that contain the
+      # places on the map, with their outlines.
+      GEO_CRAWL_ENABLED: ${GEO_CRAWL_ENABLED:-true}
+      GEO_CRAWL_TARGETS: ${GEO_CRAWL_TARGETS:-bbox:-80.3,43.6,-79.2,44.2}
+      GEO_CRAWL_TARGETS_PER_TICK: ${GEO_CRAWL_TARGETS_PER_TICK:-1}
+      GEO_CRAWL_CHECK_SECONDS: ${GEO_CRAWL_CHECK_SECONDS:-21600}
+      GEO_CRAWL_INTERVAL_HOURS: ${GEO_CRAWL_INTERVAL_HOURS:-168}
+      GEO_CRAWL_PAGE_SIZE: ${GEO_CRAWL_PAGE_SIZE:-200}
+      GEO_CRAWL_MAX_PLACES: ${GEO_CRAWL_MAX_PLACES:-5000}
+      GEO_CRAWL_FETCH_BOUNDARIES: ${GEO_CRAWL_FETCH_BOUNDARIES:-true}
+      GEO_CRAWL_MIN_INTERVAL: ${GEO_CRAWL_MIN_INTERVAL:-2.2}
+      GEO_CRAWL_MAX_RETRIES: ${GEO_CRAWL_MAX_RETRIES:-5}
+      # OpenStreetMap POIs (Overpass)
+      POI_CRAWL_ENABLED: ${POI_CRAWL_ENABLED:-true}
+      POI_CRAWL_CHECK_SECONDS: ${POI_CRAWL_CHECK_SECONDS:-86400}
+      POI_CRAWL_INTERVAL_DAYS: ${POI_CRAWL_INTERVAL_DAYS:-7}
+      # Geocoding — free tiers first, Google last
+      GEOCODE_PROVIDER_ORDER: ${GEOCODE_PROVIDER_ORDER:-geocode_maps_co,locationiq,geocodio,nominatim,google}
+      GEOCODE_REGION_BIAS: ${GEOCODE_REGION_BIAS:-ca}
+      GEOCODE_COUNTRY: ${GEOCODE_COUNTRY:-CA}
+      NOMINATIM_EMAIL: ${NOMINATIM_EMAIL:-}
+      GEOCODIO_API_KEY: ${GEOCODIO_API_KEY:-}
+      LOCATIONIQ_API_KEY: ${LOCATIONIQ_API_KEY:-}
+      GEOCODE_MAPS_CO_API_KEY: ${GEOCODE_MAPS_CO_API_KEY:-}
+      # Scheduler cadence
+      CRAWLER_ENABLED: ${CRAWLER_ENABLED:-true}
+      CRAWLER_TICK_SECONDS: ${CRAWLER_TICK_SECONDS:-300}
+      CRAWLER_RETENTION_SECONDS: ${CRAWLER_RETENTION_SECONDS:-3600}
+      CRAWLER_SEED_ON_START: ${CRAWLER_SEED_ON_START:-true}
+    networks:
+      - whereq-network
+    depends_on:
+      api:
+        condition: service_healthy
+    # The crawler reuses the API image, which bakes in an HTTP healthcheck for
+    # uvicorn on :8002. The crawler runs the scheduler (no server), so that
+    # check would always fail — disable it. Liveness is handled by the process
+    # exiting on fatal error + restart:unless-stopped.
+    healthcheck:
+      disable: true
+
+  # ---------------------------------------------------------------------------
+  # Frontend Layer
+  # ---------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/frontend/Dockerfile
+      args:
+        VITE_GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
+        VITE_GOOGLE_MAPS_MAP_ID: ${GOOGLE_MAPS_MAP_ID:-}
+        VITE_API_URL: "/api"
+        VITE_KEYCLOAK_URL: ${KEYCLOAK_URL:-}
+        VITE_KEYCLOAK_REALM: ${KEYCLOAK_REALM:-whereq}
+        VITE_KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-whereq-spa}
+    restart: unless-stopped
+    ports:
+      # Override with FRONTEND_PORT if 3743 is already taken on your machine.
+      - "${FRONTEND_PORT:-3743}:80"
+    networks:
+      - whereq-network
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres-data:

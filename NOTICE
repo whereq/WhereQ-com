@@ -1,0 +1,83 @@
+# NOTICE
+
+whereq.com is licensed under the MIT License (see [LICENSE](LICENSE)).
+
+This file lists the third-party components that whereq.com depends on, and the
+attribution or notice obligations that come with them.
+
+## Python dependencies
+
+| Component | License | Note |
+|---|---|---|
+| [fastapi](https://pypi.org/project/fastapi/) | MIT | The web framework. |
+| [uvicorn](https://pypi.org/project/uvicorn/) | BSD-3-Clause | The ASGI server. |
+| [sqlalchemy](https://pypi.org/project/SQLAlchemy/) | MIT | The ORM. |
+| [geoalchemy2](https://pypi.org/project/GeoAlchemy2/) | MIT | The spatial types on top of SQLAlchemy. |
+| [alembic](https://pypi.org/project/alembic/) | MIT | Schema migrations. |
+| [asyncpg](https://pypi.org/project/asyncpg/) | Apache-2.0 | The async PostgreSQL driver. |
+| [psycopg2-binary](https://pypi.org/project/psycopg2-binary/) | LGPL-3.0-or-later with the PostgreSQL License exception | The sync PostgreSQL driver. The exception permits use in a larger work under your own terms. |
+| [pydantic](https://pypi.org/project/pydantic/) | MIT | Request/response models and settings. |
+| [pydantic-settings](https://pypi.org/project/pydantic-settings/) | MIT | Settings sourced from the environment. |
+| [python-dotenv](https://pypi.org/project/python-dotenv/) | BSD-3-Clause | Reads the local `.env`. |
+| [python-jose](https://pypi.org/project/python-jose/) | MIT | JWT decoding. |
+| [cryptography](https://pypi.org/project/cryptography/) | Apache-2.0 OR BSD-3-Clause | The crypto backend for `python-jose`. |
+| [passlib](https://pypi.org/project/passlib/) | BSD-3-Clause | Password hashing helpers. |
+| [bcrypt](https://pypi.org/project/bcrypt/) | Apache-2.0 | The bcrypt backend for `passlib`. |
+| [python-multipart](https://pypi.org/project/python-multipart/) | Apache-2.0 | Form parsing. |
+| [httpx](https://pypi.org/project/httpx/) | BSD-3-Clause | The HTTP client used for every upstream call. |
+| [email-validator](https://pypi.org/project/email-validator/) | The Unlicense | Email address validation. |
+| [websockets](https://pypi.org/project/websockets/) | BSD-3-Clause | The WebSocket server for live location. |
+| [feedparser](https://pypi.org/project/feedparser/) | BSD-2-Clause | RSS parsing for the crawler. |
+| [beautifulsoup4](https://pypi.org/project/beautifulsoup4/) | MIT | HTML article extraction. |
+| [lxml](https://pypi.org/project/lxml/) | BSD-3-Clause | The parser backend for `beautifulsoup4`. |
+| [whereq.cloud](https://pypi.org/project/whereq.cloud/) | MIT | The Data API client — fuel stations, prices and administrative geography. |
+| [pytest](https://pypi.org/project/pytest/) | MIT | The test runner. |
+| [pytest-asyncio](https://pypi.org/project/pytest-asyncio/) | Apache-2.0 | Async test support. |
+
+The full, authoritative dependency set with exact versions is in
+`backend/requirements.txt`.
+
+## Frontend dependencies
+
+| Component | License | Note |
+|---|---|---|
+| [react](https://www.npmjs.com/package/react) / [react-dom](https://www.npmjs.com/package/react-dom) | MIT | |
+| [react-router-dom](https://www.npmjs.com/package/react-router-dom) | MIT | |
+| [@whereq/react](https://www.npmjs.com/package/@whereq/react) | MIT | The shared whereq UI kit. |
+| [lucide-react](https://www.npmjs.com/package/lucide-react) | ISC | |
+| [react-icons](https://www.npmjs.com/package/react-icons) | MIT (package) | The package bundles icon sets that carry their **own** licences — Font Awesome icons are **CC BY 4.0**, which requires attribution; Feather is MIT, Material is Apache-2.0. If you use icons from this package in a distributed build, credit the icon authors as the CC BY 4.0 terms require. |
+| [keycloak-js](https://www.npmjs.com/package/keycloak-js) | Apache-2.0 | The OIDC client. |
+| [i18next](https://www.npmjs.com/package/i18next) / [react-i18next](https://www.npmjs.com/package/react-i18next) / [i18next-browser-languagedetector](https://www.npmjs.com/package/i18next-browser-languagedetector) | MIT | |
+| [@vis.gl/react-google-maps](https://www.npmjs.com/package/@vis.gl/react-google-maps) | MIT | The Google Maps React wrapper. |
+| [@googlemaps/markerclusterer](https://www.npmjs.com/package/@googlemaps/markerclusterer) | Apache-2.0 | Marker clustering. |
+| [vite](https://www.npmjs.com/package/vite) | MIT | The build tool. |
+| [@vitejs/plugin-react](https://www.npmjs.com/package/@vitejs/plugin-react) | MIT | |
+| [typescript](https://www.npmjs.com/package/typescript) | Apache-2.0 | |
+| [tailwindcss](https://www.npmjs.com/package/tailwindcss) | MIT | |
+| [postcss](https://www.npmjs.com/package/postcss) / [autoprefixer](https://www.npmjs.com/package/autoprefixer) | MIT | |
+
+The full, authoritative dependency set with exact versions is in
+`yarn.lock`.
+
+## Runtime services
+
+These are not redistributed with this repository — you bring the service, or
+you use the public one.
+
+| Service | Terms | Note |
+|---|---|---|
+| [Google Maps Platform](https://developers.google.com/maps/terms) | Google Maps Platform Terms | Requires your own API key and Map ID. Attribution must read "Map data ©2026 Google". |
+| [OpenStreetMap](https://www.openstreetmap.org/copyright) | ODbL 1.0 | The POI ingest reads OSM data. Attribution is required: "© OpenStreetMap contributors". |
+| [whereq.cloud](https://whereq.cloud) | Metered API | The Data API. Public preview access is limited; a key unlocks the full dataset. |
+
+## Fonts
+
+No font files are bundled in this repository. The frontend loads Geist, Geist
+Mono, Inter and Space Grotesk from a CDN; all four are SIL Open Font License
+1.1.
+
+## Data
+
+No third-party dataset is redistributed in this repository. See
+[docs/DATA_SOURCES.md](docs/DATA_SOURCES.md) for what each feed provides and
+under what terms it must be used.

@@ -1,0 +1,99 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend — tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Every dependency comes from PyPI — there is no private index and
+      # nothing is fetched over SSH.
+      - name: Install dependencies
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install --upgrade pip
+          .venv/bin/pip install -r requirements.lock
+
+      # The suite needs no database and no network: the tests that want a
+      # live Postgres are opt-in and skip on their own.
+      - name: Tests
+        run: .venv/bin/python -m pytest -q
+
+  frontend:
+    name: Frontend — typecheck and build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # The lockfile is the workspace's — the root package.json declares
+      # "frontend" as its only workspace.
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      # `yarn build` runs the typecheck first (tsc over both projects) and
+      # only then bundles, so a type error fails the job instead of shipping.
+      - name: Build
+        run: yarn build
+
+  docker:
+    name: Docker — the images build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The image build is its own gate: the runtime image is assembled from
+      # the pinned requirements, and a dependency the image forgot to install
+      # breaks the build in a way no unit test would catch.
+      - name: Build the API image
+        run: docker build -f docker/api/Dockerfile -t whereq-com-api:ci .
+
+      - name: Build the frontend image
+        run: docker build -f docker/frontend/Dockerfile -t whereq-com-frontend:ci .
+
+      - name: Validate the compose stack
+        run: |
+          cp docker/.env.example docker/.env
+          docker compose -f docker/docker-compose.yml config -q
+
+  secrets:
+    name: Secrets — nothing committed
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # The guard that stops this class of problem from ever coming back.
+      # A credential committed here is disclosed to every fork and every
+      # mirror, and deleting the line afterwards does not un-burn it.
+      - name: Scan for committed secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: false

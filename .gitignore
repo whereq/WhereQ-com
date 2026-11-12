@@ -1,0 +1,65 @@
+# ─── Python ────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+dist/
+*.egg-info/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+*.log
+
+# Virtual environments
+venv/
+ENV/
+.venv/
+env/
+
+# ─── Node / Frontend ───────────────────────────────────────────────────────
+node_modules/
+.pnp
+.pnp.js
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Build outputs
+frontend/dist/
+dist-ssr/
+*.local
+
+# ─── Secrets ──────────────────────────────────────────────────────────────
+# Real values never belong in the repository. The *.example templates are
+# tracked on purpose — the negation at the end re-includes them.
+.env
+.env.*
+!.env.example
+docker/.env
+backend/.env
+frontend/.env
+
+# ─── Local data / databases ────────────────────────────────────────────────
+*.sqlite3
+*.db
+pgdata/
+data/postgres/
+backups/
+*.sql.gz
+
+# ─── Tooling / editors ────────────────────────────────────────────────────
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Agent / editor settings — machine-local, never shared
+.claude/

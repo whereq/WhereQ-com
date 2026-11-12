@@ -1,0 +1,43 @@
+# Keep the build context small and deterministic. Anything here is invisible
+# to the Docker build — the images assemble from the source tree alone.
+
+.git/
+.gitignore
+.github/
+
+# Python
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/.ruff_cache/
+**/.mypy_cache/
+backend/.venv/
+backend/.env
+**/*.egg-info/
+
+# Node
+node_modules/
+frontend/dist/
+frontend/.env
+.yarn/cache
+
+# Local secrets and data
+**/.env
+**/.env.local
+docker/.env
+backups/
+*.sql.gz
+
+# Docs and tooling that the images do not need
+docs/
+legacy/
+scripts/
+bin/
+Makefile
+*.md
+
+# Editor / OS noise
+.vscode/
+.idea/
+.DS_Store
+*.swp

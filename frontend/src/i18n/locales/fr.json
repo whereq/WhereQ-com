@@ -1,0 +1,391 @@
+{
+  "tagline": "OS DES LIEUX",
+  "search": {
+    "placeholder": "Où allez-vous ?  Rues, lieux, mémoriaux, amis…",
+    "locked": "Connectez-vous pour rechercher",
+    "signinTitle": "Connectez-vous pour rechercher",
+    "signinText": "La recherche de rues et d'adresses utilise Google Places, et votre rayon et vos catégories sont conservés sur votre compte. Connectez-vous pour les utiliser.",
+    "signinLater": "Pas maintenant",
+    "kickerAddress": "Adresse",
+    "kickerSchool": "École",
+    "kickerPlace": "Lieu",
+    "nearbyAround": "Ce qui se trouve autour",
+    "close": "Fermer",
+    "reopenCard": "Afficher la carte du lieu"
+  },
+  "searchFilters": {
+    "all": "Tout",
+    "gas": "Stations-service",
+    "nearest": "Plus proches",
+    "cheapest": "Moins chères",
+    "gasGated": "Connectez-vous pour voir les prix de l'essence"
+  },
+  "nearby": {
+    "tab": "À proximité",
+    "radius": "Rayon",
+    "categories": "Catégories",
+    "all": "Tout",
+    "loading": "Recherche en cours…",
+    "error": "Impossible de charger les lieux à proximité",
+    "empty": "Rien à proximité dans ce rayon",
+    "noCentre": "Déplacez la carte pour explorer autour de vous",
+    "count": "{{count}} à proximité",
+    "recent": "récent",
+    "news": "Actualités et événements",
+    "alerts": "Alertes",
+    "hint": "Connectez-vous pour conserver votre rayon et vos catégories"
+  },
+  "sidebarSearch": {
+    "placeholder": "Rechercher adresses et lieux…",
+    "searching": "Recherche en cours…",
+    "empty": "Aucun résultat",
+    "signin": "Connectez-vous pour rechercher rues et adresses",
+    "clear": "Effacer la recherche",
+    "locked": "Connectez-vous pour rechercher adresses et lieux"
+  },
+  "signin": "Connexion",
+  "signout": "Déconnexion",
+  "guest": "Invité",
+  "nav": {
+    "map": "Carte",
+    "schools": "Écoles",
+    "guides": "Guides",
+    "memorials": "Mémoriaux",
+    "social": "Social",
+    "routes": "Itinéraires",
+    "cards": "Cartes"
+  },
+  "local": {
+    "title": "Actualités locales sur la carte",
+    "news": "Actualités",
+    "events": "Événements",
+    "stories": "Récits",
+    "topics": "Sujets",
+    "clear": "Effacer",
+    "more": "Filtres",
+    "less": "Masquer",
+    "category": "Catégorie",
+    "source": "Source",
+    "results": "{{count}} à proximité",
+    "zoomHint": "Zoomez pour en voir plus",
+    "range": {
+      "24h": "24h",
+      "7d": "7j",
+      "30d": "30j",
+      "all": "Tout"
+    }
+  },
+  "quick": {
+    "food": "Manger",
+    "coffee": "Café",
+    "fuel": "Essence",
+    "parking": "Parking",
+    "stays": "Hôtels",
+    "more": "Plus"
+  },
+  "layers": {
+    "streets": "Plan",
+    "satellite": "Satellite",
+    "terrain": "Terrain",
+    "transit": "Transit",
+    "bike": "Vélo",
+    "traffic": "Trafic"
+  },
+  "sect": {
+    "nbhd": "Quartier",
+    "essentials": "Services du quartier",
+    "quick": "Catégories",
+    "layers": "Style de carte",
+    "filters": "Sur la carte",
+    "planner": "Itinéraire",
+    "friends": "Amis à proximité",
+    "saved": "Favoris",
+    "log": "Trajets du jour"
+  },
+  "ess": {
+    "schools": "Écoles",
+    "pharmacies": "Pharmacies",
+    "clinics": "Cliniques sans RDV",
+    "plazas": "Places",
+    "libraries": "Bibliothèques"
+  },
+  "nbhd": {
+    "name": "Downtown Toronto",
+    "region": "Toronto · CA",
+    "walk": "Marche",
+    "transit": "Transit",
+    "bike": "Vélo",
+    "greenery": "Verdure",
+    "show": "Afficher la limite",
+    "catchment": "Carte scolaire",
+    "clear": "Effacer"
+  },
+  "filters": {
+    "friends": "Amis",
+    "memorial": "Lieux de mémoire",
+    "hazards": "Incidents & alertes",
+    "guides": "Guides curatés",
+    "routes": "Itinéraires quotidiens",
+    "weather": "Météo",
+    "areas": "Zones administratives"
+  },
+  "planner": {
+    "from": "Position actuelle",
+    "to": "Pier Coffee, Old Town",
+    "via": "+ Ajouter une étape",
+    "go": "Démarrer",
+    "alt": "Itinéraires",
+    "save": "Sauver"
+  },
+  "route": {
+    "turn": "Tournez à droite sur Hawthorne Ave",
+    "eta": "Arrivée",
+    "stop": "Arrêter"
+  },
+  "poi": {
+    "directions": "Y aller →",
+    "share": "Partager",
+    "save": "Sauver",
+    "saved": "Sauvé ✓",
+    "openSchools": "Ouvrir dans Schools",
+    "readMore": "Lire la suite ↗",
+    "confirmHazard": "Toujours là ✔",
+    "confirmed": "✔ Confirmé",
+    "confirmedCount": "✔ {{count}} confirmations",
+    "clearPin": "Retirer le repère"
+  },
+  "friends": {
+    "empty": "Aucun ami ne partage sa position",
+    "sharing": "Position partagée"
+  },
+  "crumb": {
+    "city": "Toronto",
+    "area": "Downtown Toronto · CA"
+  },
+  "geo": {
+    "containedIn": "Se trouve dans",
+    "showOnMap": "Afficher cette zone sur la carte",
+    "dataBy": "Données",
+    "sourceLink": "source",
+    "kind": {
+      "country": "Pays",
+      "province": "Province",
+      "region": "Région",
+      "municipality": "Municipalité",
+      "city": "Ville",
+      "town": "Ville",
+      "district": "District",
+      "ward": "Quartier électoral",
+      "neighbourhood": "Quartier"
+    }
+  },
+  "school": {
+    "catchment": "Secteur scolaire",
+    "catchmentArea": "secteur desservi",
+    "showCatchment": "Afficher le secteur",
+    "signinForCatchment": "Connectez-vous pour voir le secteur"
+  },
+  "legend": {
+    "me": "Moi",
+    "friends": "Amis",
+    "memorial": "Mémoire",
+    "hazard": "Alerte"
+  },
+  "footer": {
+    "copy": "© 2026 whereq.com · tout ce qui concerne les lieux",
+    "links": {
+      "about": "À propos",
+      "api": "API",
+      "privacy": "Confidentialité",
+      "status": "Statut"
+    },
+    "live": "En ligne · exploré",
+    "attribution": "Données cartographiques © Google · Lieux © les contributeurs d’OpenStreetMap · Carburant et géographie explorés depuis whereq.cloud"
+  },
+  "hero": {
+    "badge": "Disponible dans plus de 50 pays",
+    "title": {
+      "line1": "Découvrez le Monde",
+      "line2": "Au-delà de la Carte"
+    },
+    "subtitle": "whereq transforme votre façon de vivre les lieux — des guides de quartier et histoires cachées aux connexions sociales et voyages personnels.",
+    "cta": {
+      "primary": "Commencer l'exploration",
+      "secondary": "Voir la démo"
+    },
+    "stat": {
+      "places": "Lieux",
+      "users": "Utilisateurs",
+      "countries": "Pays"
+    }
+  },
+  "services": {
+    "tag": "Ce Que Nous Offrons",
+    "title": "Explorez Chaque Dimension d'un Lieu",
+    "subtitle": "Huit façons puissantes de vivre, comprendre et partager le monde qui vous entoure.",
+    "neighbourhood": {
+      "title": "Guide de Quartier",
+      "desc": "Découvrez ce qui rend chaque quartier unique avec des insights locaux, des notes et des guides communautaires d'experts."
+    },
+    "memorial": {
+      "title": "Histoires Mémorielles",
+      "desc": "Découvrez les histoires cachées et les récits non racontés derrière les lieux significatifs du monde entier."
+    },
+    "social": {
+      "title": "Lieux Sociaux",
+      "desc": "Connectez-vous avec des personnes qui partagent votre amour pour des lieux spécifiques et des expériences locales."
+    },
+    "route": {
+      "title": "Suivi d'Itinéraire",
+      "desc": "Enregistrez et partagez vos trajets quotidiens, découvrez des tendances dans vos déplacements et explorez les parcours des autres."
+    },
+    "trails": {
+      "title": "Sentiers Naturels",
+      "desc": "Explorez des aventures en plein air soigneusement sélectionnées avec les conditions de sentier en temps réel."
+    },
+    "timetravel": {
+      "title": "Voyage dans le Temps",
+      "desc": "Voyez comment n'importe quel lieu s'est transformé au fil des décennies avec de superbes superpositions d'images historiques."
+    },
+    "pulse": {
+      "title": "Pouls Local",
+      "desc": "Restez informé des événements, ouvertures et nouveautés dans votre région en ce moment."
+    },
+    "journal": {
+      "title": "Journal Géo",
+      "desc": "Créez des souvenirs, photos et histoires géolocalisés, liés en permanence aux lieux que vous avez visités."
+    },
+    "learnmore": "En savoir plus"
+  },
+  "spotlight": {
+    "tag": "Service en Vedette",
+    "title": "Connaissez Votre Quartier Comme un Local",
+    "subtitle": "Notre Guide de Quartier rassemble des données participatives, des avis d'experts et des insights alimentés par l'IA pour vous donner une image complète de n'importe quelle zone.",
+    "features": [
+      "Scores de sécurité et de praticabilité en temps réel",
+      "Focus sur les commerces locaux et trésors cachés",
+      "Évaluations des écoles et indice de convivialité familiale",
+      "Contexte historique et évolution du quartier"
+    ],
+    "cta": "Explorer les Quartiers"
+  },
+  "howitworks": {
+    "tag": "Comment Ça Fonctionne",
+    "title": "Trois Étapes vers un Monde Plus Profond",
+    "steps": [
+      {
+        "title": "Épinglez un Lieu",
+        "desc": "Choisissez n'importe quel endroit sur le globe — votre domicile, une destination de rêve ou un lieu qui vous intrigue."
+      },
+      {
+        "title": "Explorez en Profondeur",
+        "desc": "Débloquez des histoires, des guides, des connexions sociales et des couches de données qui révèlent ce qui rend ce lieu vraiment unique."
+      },
+      {
+        "title": "Partagez & Connectez",
+        "desc": "Ajoutez vos propres histoires, connectez-vous avec les communautés locales et construisez une carte plus riche pour tous."
+      }
+    ]
+  },
+  "datasource": {
+    "tag": "D'où viennent les données",
+    "title": "Explorées, pas saisies",
+    "subtitle": "Rien sur la carte n'a été tapé à la main. Notre crawler va les chercher, les rafraîchit et les place là où il faut.",
+    "whereqcloud": {
+      "title": "whereq.cloud",
+      "desc": "Stations-service, prix en direct et géographie administrative — provinces, villes, quartiers, arrondissements — avec leurs contours réels."
+    },
+    "osm": {
+      "title": "OpenStreetMap",
+      "desc": "Les lieux autour de vous : café, restauration, stationnement, pharmacies, cliniques, bibliothèques et places."
+    },
+    "feeds": {
+      "title": "Flux d'actualités et d'événements",
+      "desc": "Actualités locales, événements, histoires et sujets de quartier, explorés depuis des flux RSS et JSON puis placés sur la carte."
+    }
+  },
+  "stats": {
+    "tag": "Grandir Ensemble",
+    "title": "Cartographier le Monde, Ensemble",
+    "items": {
+      "places": "Lieux Documentés",
+      "users": "Utilisateurs Actifs",
+      "countries": "Pays Couverts",
+      "stories": "Histoires Partagées"
+    }
+  },
+  "cta": {
+    "tag": "Restez Informé",
+    "title": "Soyez le Premier à Explorer",
+    "subtitle": "Obtenez un accès anticipé, des mises à jour de fonctionnalités et des découvertes de lieux directement dans votre boîte mail.",
+    "placeholder": "Entrez votre adresse e-mail",
+    "button": "S'abonner"
+  },
+  "about": {
+    "title": "À propos"
+  },
+  "toast": {
+    "dismiss": "Fermer",
+    "requestFailed": "Une erreur est survenue (HTTP {{status}}). Veuillez réessayer.",
+    "network": "Impossible de joindre le serveur. Vérifiez votre connexion et réessayez.",
+    "signInForPrices": "Connectez-vous pour voir les prix du carburant en direct.",
+    "reportSubmitted": "Signalement envoyé — merci.",
+    "mapsFailed": "La carte n'a pas pu être chargée. Veuillez réessayer."
+  },
+  "pages": {
+    "guides": {
+      "title": "Guides de Quartier",
+      "subtitle": "Explorez des quartiers notés avec marche, transit et informations locales."
+    },
+    "memorials": {
+      "title": "Histoires Mémorielles",
+      "subtitle": "Découvrez les histoires cachées et les récits personnels liés à des lieux significatifs."
+    },
+    "social": {
+      "title": "Social",
+      "subtitle": "Connectez-vous avec des amis et découvrez qui est à proximité."
+    },
+    "routes": {
+      "title": "Itinéraires",
+      "subtitle": "Suivez vos trajets, explorez des itinéraires publics et partagez vos aventures.",
+      "error": "Impossible de charger les itinéraires."
+    }
+  },
+  "cards": {
+    "title": "Mes cartes",
+    "subtitle": "Votre carte pour un lieu — et ce qui l'entoure.",
+    "signinText": "Connectez-vous pour créer une carte.",
+    "new": "Nouvelle carte",
+    "loading": "Chargement de vos cartes...",
+    "empty": "Aucune carte. Créez-en une pour un lieu qui compte pour vous.",
+    "count": "{{count}} carte",
+    "count_other": "{{count}} cartes",
+    "name": "Nom",
+    "namePlaceholder": "Le nom sur la carte",
+    "nameRequired": "La carte a besoin d'un nom.",
+    "description": "Description",
+    "descriptionPlaceholder": "Ce qu'il faut savoir à son sujet",
+    "profile": "Profil",
+    "kindBusiness": "Commerce",
+    "kindPerson": "Personne",
+    "category": "Catégorie",
+    "categoryNone": "Aucune",
+    "address": "Adresse",
+    "addressPlaceholder": "Cherchez l'adresse",
+    "addressRequired": "Cherchez l'adresse dont la carte parle.",
+    "addressFailed": "Cette adresse n'a pas pu être résolue.",
+    "radius": "Rayon",
+    "categoryCount": "{{count}} catégories",
+    "categoryCount_other": "{{count}} catégories",
+    "allCategories": "toutes les catégories",
+    "logo": "Logo ou photo (un lien)",
+    "accent": "Couleur d'accent",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "view": "Ouvrir",
+    "confirmDelete": "Supprimer cette carte ?",
+    "saveFailed": "La carte n'a pas pu être enregistrée."
+  }
+}
