@@ -15,9 +15,10 @@ import { NEARBY_RADII_KM, formatRadius } from '@/lib/nearbyCategories'
  * account), so the value and the change come in as props.
  *
  * The canonical choices live in `lib/nearbyCategories.ts` — the *radii*, not
- * the markup. Another application adopts the role by copying this component
- * and the two CSS classes; it does not re-invent a radius picker, because a
- * radius picker that looks different in two apps is two controls, not one.
+ * the markup. Another application adopts the role
+ * by copying this component and the two CSS classes; it does not re-invent a
+ * radius picker, because a radius picker that looks different in two apps is
+ * two controls, not one.
  *
  * @see docs/ARCHITECTURE.md
  */

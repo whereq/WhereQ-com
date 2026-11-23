@@ -35,6 +35,7 @@
     "alerts": "Alertes",
     "hint": "Connectez-vous pour conserver votre rayon et vos catégories"
   },
+
   "sidebarSearch": {
     "placeholder": "Rechercher adresses et lieux…",
     "searching": "Recherche en cours…",
@@ -199,62 +200,28 @@
       "privacy": "Confidentialité",
       "status": "Statut"
     },
-    "live": "En ligne · exploré",
-    "attribution": "Données cartographiques © Google · Lieux © les contributeurs d’OpenStreetMap · Carburant et géographie explorés depuis whereq.cloud"
+    "live": "En ligne · sync",
+    "attribution": "Données cartographiques ©{{year}} Google · Lieux © les contributeurs d’OpenStreetMap · Carburant et géographie depuis whereq.cloud"
   },
   "hero": {
     "badge": "Disponible dans plus de 50 pays",
-    "title": {
-      "line1": "Découvrez le Monde",
-      "line2": "Au-delà de la Carte"
-    },
+    "title": { "line1": "Découvrez le Monde", "line2": "Au-delà de la Carte" },
     "subtitle": "whereq transforme votre façon de vivre les lieux — des guides de quartier et histoires cachées aux connexions sociales et voyages personnels.",
-    "cta": {
-      "primary": "Commencer l'exploration",
-      "secondary": "Voir la démo"
-    },
-    "stat": {
-      "places": "Lieux",
-      "users": "Utilisateurs",
-      "countries": "Pays"
-    }
+    "cta": { "primary": "Commencer l'exploration", "secondary": "Voir la démo" },
+    "stat": { "places": "Lieux", "users": "Utilisateurs", "countries": "Pays" }
   },
   "services": {
     "tag": "Ce Que Nous Offrons",
     "title": "Explorez Chaque Dimension d'un Lieu",
     "subtitle": "Huit façons puissantes de vivre, comprendre et partager le monde qui vous entoure.",
-    "neighbourhood": {
-      "title": "Guide de Quartier",
-      "desc": "Découvrez ce qui rend chaque quartier unique avec des insights locaux, des notes et des guides communautaires d'experts."
-    },
-    "memorial": {
-      "title": "Histoires Mémorielles",
-      "desc": "Découvrez les histoires cachées et les récits non racontés derrière les lieux significatifs du monde entier."
-    },
-    "social": {
-      "title": "Lieux Sociaux",
-      "desc": "Connectez-vous avec des personnes qui partagent votre amour pour des lieux spécifiques et des expériences locales."
-    },
-    "route": {
-      "title": "Suivi d'Itinéraire",
-      "desc": "Enregistrez et partagez vos trajets quotidiens, découvrez des tendances dans vos déplacements et explorez les parcours des autres."
-    },
-    "trails": {
-      "title": "Sentiers Naturels",
-      "desc": "Explorez des aventures en plein air soigneusement sélectionnées avec les conditions de sentier en temps réel."
-    },
-    "timetravel": {
-      "title": "Voyage dans le Temps",
-      "desc": "Voyez comment n'importe quel lieu s'est transformé au fil des décennies avec de superbes superpositions d'images historiques."
-    },
-    "pulse": {
-      "title": "Pouls Local",
-      "desc": "Restez informé des événements, ouvertures et nouveautés dans votre région en ce moment."
-    },
-    "journal": {
-      "title": "Journal Géo",
-      "desc": "Créez des souvenirs, photos et histoires géolocalisés, liés en permanence aux lieux que vous avez visités."
-    },
+    "neighbourhood": { "title": "Guide de Quartier", "desc": "Découvrez ce qui rend chaque quartier unique avec des insights locaux, des notes et des guides communautaires d'experts." },
+    "memorial": { "title": "Histoires Mémorielles", "desc": "Découvrez les histoires cachées et les récits non racontés derrière les lieux significatifs du monde entier." },
+    "social": { "title": "Lieux Sociaux", "desc": "Connectez-vous avec des personnes qui partagent votre amour pour des lieux spécifiques et des expériences locales." },
+    "route": { "title": "Suivi d'Itinéraire", "desc": "Enregistrez et partagez vos trajets quotidiens, découvrez des tendances dans vos déplacements et explorez les parcours des autres." },
+    "trails": { "title": "Sentiers Naturels", "desc": "Explorez des aventures en plein air soigneusement sélectionnées avec les conditions de sentier en temps réel." },
+    "timetravel": { "title": "Voyage dans le Temps", "desc": "Voyez comment n'importe quel lieu s'est transformé au fil des décennies avec de superbes superpositions d'images historiques." },
+    "pulse": { "title": "Pouls Local", "desc": "Restez informé des événements, ouvertures et nouveautés dans votre région en ce moment." },
+    "journal": { "title": "Journal Géo", "desc": "Créez des souvenirs, photos et histoires géolocalisés, liés en permanence aux lieux que vous avez visités." },
     "learnmore": "En savoir plus"
   },
   "spotlight": {
@@ -273,24 +240,15 @@
     "tag": "Comment Ça Fonctionne",
     "title": "Trois Étapes vers un Monde Plus Profond",
     "steps": [
-      {
-        "title": "Épinglez un Lieu",
-        "desc": "Choisissez n'importe quel endroit sur le globe — votre domicile, une destination de rêve ou un lieu qui vous intrigue."
-      },
-      {
-        "title": "Explorez en Profondeur",
-        "desc": "Débloquez des histoires, des guides, des connexions sociales et des couches de données qui révèlent ce qui rend ce lieu vraiment unique."
-      },
-      {
-        "title": "Partagez & Connectez",
-        "desc": "Ajoutez vos propres histoires, connectez-vous avec les communautés locales et construisez une carte plus riche pour tous."
-      }
+      { "title": "Épinglez un Lieu", "desc": "Choisissez n'importe quel endroit sur le globe — votre domicile, une destination de rêve ou un lieu qui vous intrigue." },
+      { "title": "Explorez en Profondeur", "desc": "Débloquez des histoires, des guides, des connexions sociales et des couches de données qui révèlent ce qui rend ce lieu vraiment unique." },
+      { "title": "Partagez & Connectez", "desc": "Ajoutez vos propres histoires, connectez-vous avec les communautés locales et construisez une carte plus riche pour tous." }
     ]
   },
   "datasource": {
     "tag": "D'où viennent les données",
-    "title": "Explorées, pas saisies",
-    "subtitle": "Rien sur la carte n'a été tapé à la main. Notre crawler va les chercher, les rafraîchit et les place là où il faut.",
+    "title": "Collectées, pas saisies",
+    "subtitle": "Rien sur la carte n'a été tapé à la main. whereq.cloud collecte les prix du carburant, la géographie et les écoles, et nous les lisons en direct ; notre propre crawler récupère les lieux et les flux d'actualités.",
     "whereqcloud": {
       "title": "whereq.cloud",
       "desc": "Stations-service, prix en direct et géographie administrative — provinces, villes, quartiers, arrondissements — avec leurs contours réels."
@@ -301,18 +259,13 @@
     },
     "feeds": {
       "title": "Flux d'actualités et d'événements",
-      "desc": "Actualités locales, événements, histoires et sujets de quartier, explorés depuis des flux RSS et JSON puis placés sur la carte."
+      "desc": "Actualités locales, événements, histoires et sujets de quartier, récupérés depuis des flux RSS et JSON puis placés sur la carte."
     }
   },
   "stats": {
     "tag": "Grandir Ensemble",
     "title": "Cartographier le Monde, Ensemble",
-    "items": {
-      "places": "Lieux Documentés",
-      "users": "Utilisateurs Actifs",
-      "countries": "Pays Couverts",
-      "stories": "Histoires Partagées"
-    }
+    "items": { "places": "Lieux Documentés", "users": "Utilisateurs Actifs", "countries": "Pays Couverts", "stories": "Histoires Partagées" }
   },
   "cta": {
     "tag": "Restez Informé",
@@ -333,23 +286,10 @@
     "mapsFailed": "La carte n'a pas pu être chargée. Veuillez réessayer."
   },
   "pages": {
-    "guides": {
-      "title": "Guides de Quartier",
-      "subtitle": "Explorez des quartiers notés avec marche, transit et informations locales."
-    },
-    "memorials": {
-      "title": "Histoires Mémorielles",
-      "subtitle": "Découvrez les histoires cachées et les récits personnels liés à des lieux significatifs."
-    },
-    "social": {
-      "title": "Social",
-      "subtitle": "Connectez-vous avec des amis et découvrez qui est à proximité."
-    },
-    "routes": {
-      "title": "Itinéraires",
-      "subtitle": "Suivez vos trajets, explorez des itinéraires publics et partagez vos aventures.",
-      "error": "Impossible de charger les itinéraires."
-    }
+    "guides": { "title": "Guides de Quartier", "subtitle": "Explorez des quartiers notés avec marche, transit et informations locales." },
+    "memorials": { "title": "Histoires Mémorielles", "subtitle": "Découvrez les histoires cachées et les récits personnels liés à des lieux significatifs." },
+    "social": { "title": "Social", "subtitle": "Connectez-vous avec des amis et découvrez qui est à proximité." },
+    "routes": { "title": "Itinéraires", "subtitle": "Suivez vos trajets, explorez des itinéraires publics et partagez vos aventures.", "error": "Impossible de charger les itinéraires." }
   },
   "cards": {
     "title": "Mes cartes",

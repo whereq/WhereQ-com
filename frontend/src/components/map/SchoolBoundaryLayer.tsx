@@ -24,11 +24,11 @@ import { boundsOf, fitPadding, polygonsOf, toPath } from './geoStyles'
  */
 const BOUNDARY_COLOR = '#F97316'
 
-/** The school behind a selection ("school-1125" → 1125). */
-function schoolIdOf(id: string | undefined, kind: string | undefined): number | null {
+/** The school behind a selection ("school-ycdsb/0158" → "ycdsb/0158"). */
+function schoolUidOf(id: string | undefined, kind: string | undefined): string | null {
   if (!id || kind !== 'school') return null
-  const n = Number(id.replace(/^school-/, ''))
-  return Number.isFinite(n) ? n : null
+  const uid = id.replace(/^school-/, '')
+  return uid || null
 }
 
 export function SchoolBoundaryLayer() {
@@ -47,8 +47,8 @@ export function SchoolBoundaryLayer() {
 
   // The shape of the picked school — fetched here, drawn below.
   useEffect(() => {
-    const schoolId = schoolIdOf(selection?.id, selection?.kind)
-    if (schoolId == null) {
+    const schoolUid = schoolUidOf(selection?.id, selection?.kind)
+    if (schoolUid == null) {
       // Another kind of place — there is no catchment to draw.
       clearSchoolBoundary()
       return
@@ -62,9 +62,9 @@ export function SchoolBoundaryLayer() {
     // catchments while the new one loads.
     clearSchoolBoundary()
     let cancelled = false
-    schoolsMapApi.boundary(schoolId).then(b => {
+    schoolsMapApi.boundary(schoolUid).then(b => {
       if (cancelled || !b.geometry) return
-      requestSchoolBoundary({ schoolId: b.school_id, name: b.name, geometry: b.geometry })
+      requestSchoolBoundary({ schoolUid: b.school_uid, name: b.name, geometry: b.geometry })
     }).catch(() => {
       // No catchment for this school, or the session went away: nothing is
       // drawn, and the card shows the school without a catchment chip.

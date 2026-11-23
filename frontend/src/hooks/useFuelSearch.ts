@@ -29,7 +29,7 @@ interface Options {
 /**
  * Gas stations near the map centre, with their prices.
  *
- * Reads our own /api/fuel/stations (already crawled from whereq.cloud), so
+ * Reads our own /api/fuel/stations (already synced from whereq.cloud), so
  * the search is free and the whereq.cloud key never reaches the browser.
  */
 export function useFuelSearch({ query, enabled, center, bbox, sort, radiusKm = 25 }: Options) {

@@ -3,7 +3,8 @@ import type { GeoGeometry } from '@/types/geo'
 
 /** Lightweight school pin from GET /schools/map (main-map layer). */
 export interface SchoolMapPin {
-  id: number
+  /** The cross-system key — `ycdsb/0158`. */
+  uid: string
   name: string
   lat: number
   lng: number
@@ -22,7 +23,7 @@ export interface SchoolMapPin {
  * signed-in user is required (an anonymous call answers 401).
  */
 export interface SchoolBoundary {
-  school_id: number
+  school_uid: string
   name: string
   geometry: GeoGeometry | null
   polygon_count: number
@@ -36,5 +37,5 @@ export const schoolsMapApi = {
   count: async (bbox: string): Promise<number> =>
     (await api.get<{ total: number }>(`/schools?bbox=${encodeURIComponent(bbox)}&page_size=1`)).total,
   /** The catchment outline (GeoJSON MultiPolygon). Signed-in users only. */
-  boundary: (id: number) => api.get<SchoolBoundary>(`/schools/${id}/boundary`),
+  boundary: (uid: string) => api.get<SchoolBoundary>(`/schools/${uid}/boundary`),
 }

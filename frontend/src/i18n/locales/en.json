@@ -35,6 +35,7 @@
     "alerts": "Alerts",
     "hint": "Sign in to keep your radius and categories"
   },
+
   "sidebarSearch": {
     "placeholder": "Search addresses & places…",
     "searching": "Searching…",
@@ -199,62 +200,28 @@
       "privacy": "Privacy",
       "status": "Status"
     },
-    "live": "Live · crawled",
-    "attribution": "Map data © Google · Places data © OpenStreetMap contributors · Fuel & geography crawled from whereq.cloud"
+    "live": "Live · sync",
+    "attribution": "Map data ©{{year}} Google · Places data © OpenStreetMap contributors · Fuel & geography from whereq.cloud"
   },
   "hero": {
     "badge": "Now available in 50+ countries",
-    "title": {
-      "line1": "Discover the World",
-      "line2": "Beyond the Map"
-    },
+    "title": { "line1": "Discover the World", "line2": "Beyond the Map" },
     "subtitle": "whereq transforms how you experience places — from neighbourhood guides and hidden histories to social connections and personal journeys.",
-    "cta": {
-      "primary": "Start Exploring",
-      "secondary": "Watch Demo"
-    },
-    "stat": {
-      "places": "Places",
-      "users": "Users",
-      "countries": "Countries"
-    }
+    "cta": { "primary": "Start Exploring", "secondary": "Watch Demo" },
+    "stat": { "places": "Places", "users": "Users", "countries": "Countries" }
   },
   "services": {
     "tag": "What We Offer",
     "title": "Explore Every Dimension of a Place",
     "subtitle": "Eight powerful ways to experience, understand, and share the world around you.",
-    "neighbourhood": {
-      "title": "Neighbourhood Guide",
-      "desc": "Discover what makes each neighbourhood unique with local insights, ratings, and expert community guides."
-    },
-    "memorial": {
-      "title": "Memorial Stories",
-      "desc": "Uncover the hidden histories and untold stories behind significant places around the world."
-    },
-    "social": {
-      "title": "Social Places",
-      "desc": "Connect with people who share your love for specific locations and local experiences."
-    },
-    "route": {
-      "title": "Route Tracker",
-      "desc": "Log and share your daily journeys, discover patterns in your movement, and explore others' paths."
-    },
-    "trails": {
-      "title": "Nature Trails",
-      "desc": "Explore curated outdoor adventures with real-time trail conditions and community reviews."
-    },
-    "timetravel": {
-      "title": "Time Travel",
-      "desc": "See how any location has transformed over decades with stunning historical imagery overlays."
-    },
-    "pulse": {
-      "title": "Local Pulse",
-      "desc": "Stay informed about events, openings, and happenings in your area right now."
-    },
-    "journal": {
-      "title": "Geo Journal",
-      "desc": "Create location-tagged memories, photos, and stories permanently tied to places you've been."
-    },
+    "neighbourhood": { "title": "Neighbourhood Guide", "desc": "Discover what makes each neighbourhood unique with local insights, ratings, and expert community guides." },
+    "memorial": { "title": "Memorial Stories", "desc": "Uncover the hidden histories and untold stories behind significant places around the world." },
+    "social": { "title": "Social Places", "desc": "Connect with people who share your love for specific locations and local experiences." },
+    "route": { "title": "Route Tracker", "desc": "Log and share your daily journeys, discover patterns in your movement, and explore others' paths." },
+    "trails": { "title": "Nature Trails", "desc": "Explore curated outdoor adventures with real-time trail conditions and community reviews." },
+    "timetravel": { "title": "Time Travel", "desc": "See how any location has transformed over decades with stunning historical imagery overlays." },
+    "pulse": { "title": "Local Pulse", "desc": "Stay informed about events, openings, and happenings in your area right now." },
+    "journal": { "title": "Geo Journal", "desc": "Create location-tagged memories, photos, and stories permanently tied to places you've been." },
     "learnmore": "Learn more"
   },
   "spotlight": {
@@ -273,24 +240,15 @@
     "tag": "How It Works",
     "title": "Three Steps to a Deeper World",
     "steps": [
-      {
-        "title": "Drop a Pin",
-        "desc": "Choose any location on the globe — your home, a dream destination, or somewhere you're curious about."
-      },
-      {
-        "title": "Explore Deep",
-        "desc": "Unlock stories, guides, social connections, and data layers that reveal what makes that place truly unique."
-      },
-      {
-        "title": "Share & Connect",
-        "desc": "Add your own stories, connect with local communities, and build a richer map for everyone."
-      }
+      { "title": "Drop a Pin", "desc": "Choose any location on the globe — your home, a dream destination, or somewhere you're curious about." },
+      { "title": "Explore Deep", "desc": "Unlock stories, guides, social connections, and data layers that reveal what makes that place truly unique." },
+      { "title": "Share & Connect", "desc": "Add your own stories, connect with local communities, and build a richer map for everyone." }
     ]
   },
   "datasource": {
     "tag": "Where the Data Comes From",
-    "title": "Crawled, Not Typed",
-    "subtitle": "Nothing on the map was typed in by hand. Our crawler pulls it, refreshes it, and puts it where it belongs.",
+    "title": "Collected, Not Typed",
+    "subtitle": "Nothing on the map was typed in by hand. whereq.cloud collects the fuel prices, the geography and the schools and we read them live; our own crawler pulls the places and the news feeds.",
     "whereqcloud": {
       "title": "whereq.cloud",
       "desc": "Fuel stations, live prices and the administrative geography — provinces, cities, wards, neighbourhoods — with their real outlines."
@@ -301,18 +259,13 @@
     },
     "feeds": {
       "title": "News & Events Feeds",
-      "desc": "Local news, events, stories and community topics, crawled from RSS and JSON sources and placed on the map."
+      "desc": "Local news, events, stories and community topics, pulled from RSS and JSON feeds and placed on the map."
     }
   },
   "stats": {
     "tag": "Growing Together",
     "title": "Mapping the World, Together",
-    "items": {
-      "places": "Places Documented",
-      "users": "Active Users",
-      "countries": "Countries Covered",
-      "stories": "Stories Shared"
-    }
+    "items": { "places": "Places Documented", "users": "Active Users", "countries": "Countries Covered", "stories": "Stories Shared" }
   },
   "cta": {
     "tag": "Stay in the Loop",
@@ -333,23 +286,10 @@
     "mapsFailed": "The map could not load. Please try again."
   },
   "pages": {
-    "guides": {
-      "title": "Neighbourhood Guides",
-      "subtitle": "Explore scored neighbourhoods with walkability, transit, and local insights."
-    },
-    "memorials": {
-      "title": "Memorial Stories",
-      "subtitle": "Discover the hidden histories and personal stories tied to meaningful places."
-    },
-    "social": {
-      "title": "Social",
-      "subtitle": "Connect with friends and discover who's nearby."
-    },
-    "routes": {
-      "title": "Routes",
-      "subtitle": "Track your journeys, explore public routes, and share your adventures.",
-      "error": "Could not load routes."
-    }
+    "guides": { "title": "Neighbourhood Guides", "subtitle": "Explore scored neighbourhoods with walkability, transit, and local insights." },
+    "memorials": { "title": "Memorial Stories", "subtitle": "Discover the hidden histories and personal stories tied to meaningful places." },
+    "social": { "title": "Social", "subtitle": "Connect with friends and discover who's nearby." },
+    "routes": { "title": "Routes", "subtitle": "Track your journeys, explore public routes, and share your adventures.", "error": "Could not load routes." }
   },
   "cards": {
     "title": "My cards",

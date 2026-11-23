@@ -141,9 +141,9 @@ function catchmentOf(
   schoolBoundary: SchoolBoundaryRequest | null,
 ): SchoolBoundaryRequest | null {
   if (sel.kind !== 'school') return null
-  const schoolId = numericId(sel.id)
-  if (schoolId == null) return null
-  if (schoolBoundary?.schoolId !== schoolId) return null
+  const schoolUid = sel.id.replace(/^school-/, '')
+  if (!schoolUid) return null
+  if (schoolBoundary?.schoolUid !== schoolUid) return null
   return schoolBoundary
 }
 

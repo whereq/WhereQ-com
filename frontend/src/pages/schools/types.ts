@@ -1,7 +1,6 @@
 // Types mirroring the /api/schools read API.
 
 export interface BoardOut {
-  id: number
   slug: string
   name: string
   type: string | null
@@ -9,7 +8,10 @@ export interface BoardOut {
 }
 
 export interface SchoolSummary {
-  id: number
+  /** The cross-system key: the board's slug and the school's code, joined
+   *  by a slash — `ycdsb/0158`. It is what the API's routes take, and it
+   *  does not change when the dataset is reloaded. */
+  uid: string
   name: string
   type: string | null
   province: string | null
@@ -76,7 +78,7 @@ export interface PaginatedSchools {
 }
 
 export interface MapPin {
-  id: number
+  uid: string
   name: string
   lat: number
   lng: number
@@ -87,7 +89,7 @@ export interface MapPin {
 }
 
 export interface CatchmentHit {
-  id: number
+  uid: string
   name: string
   type: string | null
   board: string | null

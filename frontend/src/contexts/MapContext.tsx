@@ -46,7 +46,8 @@ export interface GeoFocusRequest {
  * both apps of the whereq universe.
  */
 export interface SchoolBoundaryRequest {
-  schoolId: number
+  /** The school's uid — `ycdsb/0158`. */
+  schoolUid: string
   name: string
   geometry: GeoGeometry
   nonce: number
@@ -115,7 +116,7 @@ interface MapContextValue {
   /** The catchment of the picked school, drawn on the map. */
   schoolBoundary: SchoolBoundaryRequest | null
   /** Draw a school's catchment outline. */
-  requestSchoolBoundary: (b: { schoolId: number; name: string; geometry: GeoGeometry }) => void
+  requestSchoolBoundary: (b: { schoolUid: string; name: string; geometry: GeoGeometry }) => void
   /** Drop the catchment outline (a different place was picked). */
   clearSchoolBoundary: () => void
 }
@@ -210,7 +211,7 @@ export function MapProvider({ children }: { children: ReactNode }) {
   // precisely to *see* the shape, and it must still be there.
   const [schoolBoundary, setSchoolBoundary] = useState<SchoolBoundaryRequest | null>(null)
   const schoolNonce = useRef(0)
-  const requestSchoolBoundary = useCallback((b: { schoolId: number; name: string; geometry: GeoGeometry }) => {
+  const requestSchoolBoundary = useCallback((b: { schoolUid: string; name: string; geometry: GeoGeometry }) => {
     schoolNonce.current += 1
     setSchoolBoundary({ ...b, nonce: schoolNonce.current })
   }, [])

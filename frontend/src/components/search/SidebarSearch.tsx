@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { SearchBox } from '@whereq/react'
 import { useSearch, type SearchResult } from '@/hooks/useSearch'
 import { useMapContext } from '@/contexts/MapContext'
 import { useAuth } from '@/contexts/AuthContext'
@@ -16,6 +17,35 @@ const IcSearch = () => (
 function numericId(id: string): number | undefined {
   const n = Number(id.replace(/^[a-z]+-/, ''))
   return Number.isFinite(n) ? n : undefined
+}
+
+/**
+ * whereq.com's colours, expressed as the shared library's `--wq-search-*`
+ * tokens.
+ *
+ * The box itself is `@whereq/react`'s `SearchBox` — the field, the dropdown,
+ * the keyboard navigation and the ARIA wiring are the same component every
+ * whereq app uses. What is left here is whereq.com's own look (the tokens),
+ * its own result rows (the coloured dot, the name, the context) and what
+ * happens with a picked result.
+ */
+const SEARCH_THEME = {
+  fieldBg: 'var(--surface-2)',
+  fieldBorder: 'var(--border-2)',
+  fieldBorderFocus: 'var(--accent)',
+  text: 'var(--text)',
+  placeholder: 'var(--muted)',
+  icon: 'var(--text-2)',
+  iconHover: 'var(--text)',
+  listBg: 'var(--surface)',
+  listBorder: 'var(--border-2)',
+  listText: 'var(--text)',
+  listDescription: 'var(--muted)',
+  listActiveBg: 'var(--surface-2)',
+  listActiveText: 'var(--text)',
+  radius: 'var(--r-sm)',
+  shadow: '0 14px 32px rgba(0, 0, 0, .38)',
+  fontSize: '12.5px',
 }
 
 /**
@@ -44,28 +74,9 @@ export function SidebarSearch() {
   const [query, setQuery] = useState('')
   /** The picked place, once one is picked: the box shows its name. */
   const [selected, setSelected] = useState<{ id: string; name: string } | null>(null)
-  const [open, setOpen] = useState(false)
-  const [activeIdx, setActiveIdx] = useState(0)
   // A picked place ends the search: no more autocomplete calls for a query
   // the user has already answered.
   const { results, loading, resolve } = useSearch(query, 280, isAuthenticated && !selected)
-  const wrapRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => { setActiveIdx(0) }, [results])
-
-  // Clicking anywhere else closes the suggestion list.
-  useEffect(() => {
-    const fn = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('mousedown', fn)
-    return () => document.removeEventListener('mousedown', fn)
-  }, [])
-
-  const q = query.trim()
-  // A picked place closes the list: the search is answered. Typing (or the ×)
-  // opens it again.
-  const show = open && !selected && q.length > 0
 
   /** Pan the map to the picked result, drop a pin on it and open its card. */
   const pick = async (r: SearchResult) => {
@@ -96,23 +107,6 @@ export function SidebarSearch() {
     // query stays behind it — the × brings the typed text back, so the search
     // can be refined without starting over.
     setSelected({ id: r.id, name: r.name })
-    setOpen(false)
-  }
-
-  const onKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') { setOpen(false); return }
-    if (results.length === 0) return
-    if (e.key === 'ArrowDown') {
-      e.preventDefault(); setOpen(true)
-      setActiveIdx(i => Math.min(i + 1, results.length - 1))
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault(); setOpen(true)
-      setActiveIdx(i => Math.max(i - 1, 0))
-    } else if (e.key === 'Enter') {
-      e.preventDefault()
-      const r = results[activeIdx]
-      if (r) void pick(r)
-    }
   }
 
   // ── Signed out: a locked box that asks them to sign in ──────────
@@ -131,65 +125,51 @@ export function SidebarSearch() {
   }
 
   return (
-    <div className="side-search" ref={wrapRef}>
-      <div className="search">
-        <IcSearch />
-        <input
-          value={selected ? selected.name : query}
-          placeholder={t('sidebarSearch.placeholder')}
-          aria-label={t('sidebarSearch.placeholder')}
-          onChange={e => { setSelected(null); setQuery(e.target.value); setOpen(true) }}
-          onFocus={e => {
-            setOpen(true)
-            // A picked name is a *value*, not something to append to: focusing
-            // the box selects it, so the first keystroke replaces it.
-            if (selected) e.currentTarget.select()
-          }}
-          onKeyDown={onKeyDown}
-        />
-        {(query || selected) && (
-          <button
-            className="side-search-x"
-            onClick={() => {
-              if (selected) {
-                // The picked place gives way to the query it came from: the
-                // typed text is what the search is, and a picked place sitting
-                // in the box would hide it.
-                setSelected(null)
-                setOpen(true)
-              } else {
-                setQuery('')
-                setOpen(false)
-              }
-              wrapRef.current?.querySelector('input')?.focus()
-            }}
-            aria-label={t('sidebarSearch.clear')}
-          >
-            ×
-          </button>
-        )}
-      </div>
-
-      {show && (
-        <div className="side-suggest scroll">
-          {loading && <div className="side-suggest-status">{t('sidebarSearch.searching')}</div>}
-          {!loading && results.length === 0 && (
-            <div className="side-suggest-status">{t('sidebarSearch.empty')}</div>
-          )}
-          {results.map((r, idx) => (
-            <button
-              key={r.id}
-              className={`side-suggest-item${idx === activeIdx ? ' active' : ''}`}
-              onMouseEnter={() => setActiveIdx(idx)}
-              onClick={() => void pick(r)}
-            >
+    <div className="side-search">
+      <SearchBox
+        value={selected ? selected.name : query}
+        onChange={(value) => {
+          setSelected(null)
+          setQuery(value)
+        }}
+        onClear={() => {
+          if (selected) {
+            // The picked place gives way to the query it came from: the
+            // typed text is what the search is, and a picked place sitting
+            // in the box would hide it.
+            setSelected(null)
+          } else {
+            setQuery('')
+          }
+        }}
+        onFocus={(e) => {
+          // A picked name is a *value*, not something to append to: focusing
+          // the box selects it, so the first keystroke replaces it.
+          if (selected) e.currentTarget.select()
+        }}
+        suggestions={results.map((r) => ({ key: r.id, label: r.name, description: r.meta }))}
+        onSelect={(s) => {
+          const r = results.find((x) => x.id === s.key)
+          if (r) void pick(r)
+        }}
+        renderOption={(s) => {
+          const r = results.find((x) => x.id === s.key)
+          if (!r) return null
+          return (
+            <>
               <span className="side-suggest-dot" style={{ background: resultColor(r) }} />
               <span className="side-suggest-name">{r.name}</span>
               <span className="side-suggest-meta">{r.meta}</span>
-            </button>
-          ))}
-        </div>
-      )}
+            </>
+          )
+        }}
+        loading={loading}
+        loadingText={t('sidebarSearch.searching')}
+        emptyText={t('sidebarSearch.empty')}
+        placeholder={t('sidebarSearch.placeholder')}
+        clearLabel={t('sidebarSearch.clear')}
+        theme={SEARCH_THEME}
+      />
     </div>
   )
 }

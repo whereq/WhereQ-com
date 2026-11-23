@@ -51,7 +51,7 @@ export function SearchBox({ t, query, setQuery, suggestions, onPick, onSubmit }:
       {show && (
         <div className="sc-suggest sc-scroll">
           {suggestions.map((s, i) => (
-            <button key={s.id} className={`sc-sug ${i === hi ? 'hi' : ''}`} onMouseEnter={() => setHi(i)} onClick={() => pick(s)}>
+            <button key={s.uid} className={`sc-sug ${i === hi ? 'hi' : ''}`} onMouseEnter={() => setHi(i)} onClick={() => pick(s)}>
               <span className="sc-sug-dot" style={{ background: schoolColor({ type: s.type, board_type: s.board?.type, programs: s.programs }) }} />
               <span className="sc-sug-main">
                 <span className="sc-sug-name">{s.name}</span>

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/contexts/AuthContext'
@@ -158,9 +158,17 @@ export function SchoolsPage() {
     return () => clearTimeout(h)
   }, [query, filters])
 
-  const selectId = (id: number) => { schoolsApi.detail(id).then((d) => { setSelected(d); setAtHits(null) }).catch(() => {}) }
-  const pickSchool = (s: SchoolSummary) => { selectId(s.id) }
-  const openDetail = (s: SchoolSummary) => { schoolsApi.detail(s.id).then(setDetail).catch(() => {}) }
+  // The programme labels, from the taxonomy: the programmes on a school are
+  // codes, and the taxonomy is where their labels live.
+  const programLabels = useMemo(() => {
+    const out: Record<string, string> = {}
+    for (const p of tax?.programs ?? []) if (p.id) out[p.id] = p.name
+    return out
+  }, [tax])
+
+  const selectId = (uid: string) => { schoolsApi.detail(uid).then((d) => { setSelected(d); setAtHits(null) }).catch(() => {}) }
+  const pickSchool = (s: SchoolSummary) => { selectId(s.uid) }
+  const openDetail = (s: SchoolSummary) => { schoolsApi.detail(s.uid).then(setDetail).catch(() => {}) }
   const onSort = (key: string) => setSort((s) => ({ key, order: s.key === key && s.order === 'asc' ? 'desc' : 'asc' }))
 
   // Apply the current name + filter criteria and fly the map to the result area.
@@ -190,11 +198,17 @@ export function SchoolsPage() {
   }
 
   if (detail) {
-    const viewOnMap = (s: SchoolDetailT) => { setDetail(null); setMode('map'); selectId(s.id) }
+    const viewOnMap = (s: SchoolDetailT) => { setDetail(null); setMode('map'); selectId(s.uid) }
     return (
       <div className="sc-root">
         <Header {...headerProps} />
-        <SchoolDetail t={t} school={detail} onBack={() => setDetail(null)} onViewMap={viewOnMap} />
+        <SchoolDetail
+          t={t}
+          school={detail}
+          onBack={() => setDetail(null)}
+          onViewMap={viewOnMap}
+          programLabels={programLabels}
+        />
       </div>
     )
   }
@@ -247,7 +261,7 @@ export function SchoolsPage() {
                 </div>
                 {atHits.length === 0 && <div className="sc-athits-empty">{t.atHereHint}</div>}
                 {atHits.map((h) => (
-                  <button key={`${h.id}-${h.polygon_index}`} className="sc-athits-row" onClick={() => selectId(h.id)}>
+                  <button key={`${h.uid}-${h.polygon_index}`} className="sc-athits-row" onClick={() => selectId(h.uid)}>
                     <span>{h.name}</span><span className="sc-athits-meta">{h.type ?? ''}</span>
                   </button>
                 ))}

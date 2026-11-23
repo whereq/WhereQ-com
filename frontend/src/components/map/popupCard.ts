@@ -23,7 +23,13 @@ export interface PopupPrices {
 }
 
 /** A cluster pick-list row. */
-export interface ListItem { id: number; name: string; meta?: string; color: string }
+export interface ListItem {
+  /** The row's key. Opaque: a place's row id, a school's uid. */
+  id: string | number
+  name: string
+  meta?: string
+  color: string
+}
 
 export function escapeHtml(s: string | null | undefined): string {
   if (!s) return ''
