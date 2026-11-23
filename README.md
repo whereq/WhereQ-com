@@ -156,10 +156,12 @@ WhereQ-com/
 │   │   ├── core/             settings, database, security, permissions
 │   │   ├── models/           SQLAlchemy ORM models
 │   │   ├── schemas/          Pydantic request/response models
-│   │   ├── services/         business logic (geocoding, routing, taxonomy)
-│   │   ├── crawler/          the retrieval layer
-│   │   │   ├── upstream/     one module per upstream (whereq.cloud, OSM)
-│   │   │   └── cli/          one-shot crawl commands
+│   │   ├── services/         business logic (geocoding, routing, taxonomy) and
+│   │   │                    the whereq.cloud readers and ingests
+│   │   ├── crawler/          the content crawl and the scheduler
+│   │   ├── fuel_ingest.py    the one-shot fuel ingest
+│   │   ├── geo_ingest.py     the one-shot geography ingest
+│   │   ├── places_ingest.py  the one-shot POI ingest
 │   │   └── maps/             the keyed Maps data service
 │   ├── alembic/              schema migrations
 │   ├── tests/                the test suite

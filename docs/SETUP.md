@@ -153,7 +153,19 @@ single source of truth for every name and default. The most important ones:
 | `GOOGLE_MAPS_API_KEY` | *empty* | The browser key. |
 | `GOOGLE_MAPS_SERVER_KEY` | *empty* | The server key — a *different* key, without a referrer lock. |
 | `WHEREQ_CLOUD_API_KEY` | *empty* | The Data API key. |
+| `CLOUD_READ_MODE` | `cloud` | Where the geography is read from: `local`, `dual` or `cloud`. |
+| `SCHOOL_READ_MODE` | `cloud` | The same switch for the school directory. |
+| `FUEL_READ_MODE` | `cloud` | The same switch for the fuel stations and prices. |
+| `GEO_BOUNDARIES_READ_MODE` | *empty* | The outlines have their own switch. Empty means "follow `CLOUD_READ_MODE`". |
+| `FUEL_MIRROR_ENABLED` | `false` | Keep a local copy of the fuel data. The rollback. |
+| `GEO_INGEST_ENABLED` | `false` | Keep a local copy of the geography. The rollback. |
 | `NOMINATIM_EMAIL` | *empty* | A contact address for the OSM usage policy. |
+
+The read-mode switches decide **where the data comes from**. This
+installation reads whereq.cloud live, because whereq.cloud collects it — a
+second copy held here would be the copy that goes stale. The mirrors above
+are the rollback. See
+[whereq-cloud-migration.md](whereq-cloud-migration.md).
 
 ### Two Google keys, and they are not interchangeable
 
@@ -284,11 +296,19 @@ It does five things on a cadence:
 1. **Crawls the content feeds** — the configured RSS and JSON sources.
 2. **Places** each crawled item on the map, using the geocoding provider
    chain.
-3. **Crawls fuel stations and prices** from whereq.cloud, one target per tick.
-4. **Crawls administrative geography** from whereq.cloud, one target per tick.
-5. **Crawls the OpenStreetMap POIs**, when the newest OSM row is stale.
+3. **Syncs the local layer** from whereq.cloud — the news feed at the head and
+   the POI catalogue whole.
+4. **Crawls fuel stations and prices** from whereq.cloud, one target per tick.
+5. **Crawls administrative geography** from whereq.cloud, one target per tick.
 
-Steps 3 and 4 are throttled on purpose — the whereq.cloud Data API allows 30
+Steps 4 and 5 are the **mirrors**, and they are **off by default** —
+`FUEL_MIRROR_ENABLED` and `GEO_INGEST_ENABLED`. The app reads those two from
+whereq.cloud live instead, because whereq.cloud collects them and a second
+copy here would be the copy that goes stale. Turning a mirror on is the
+rollback, not the default. The OpenStreetMap POI sweep runs when its newest
+row is stale.
+
+The whereq.cloud calls are throttled on purpose — the Data API allows 30
 requests per minute per key.
 
 See [CRAWLER.md](CRAWLER.md) for the whole retrieval layer.
@@ -304,20 +324,20 @@ running one twice is safe.
 cd backend
 
 # OpenStreetMap POIs → places
-.venv/bin/python -m app.crawler.cli.places
-.venv/bin/python -m app.crawler.cli.places --only food,coffee,pharmacy
-.venv/bin/python -m app.crawler.cli.places --bbox -79.64,43.58,-79.12,43.86
+.venv/bin/python -m app.places_ingest
+.venv/bin/python -m app.places_ingest --only food,coffee,pharmacy
+.venv/bin/python -m app.places_ingest --bbox -79.64,43.58,-79.12,43.86
 
 # whereq.cloud → fuel stations, prices
-.venv/bin/python -m app.crawler.cli.fuel
-.venv/bin/python -m app.crawler.cli.fuel --target "CA:Ontario:Toronto"
-.venv/bin/python -m app.crawler.cli.fuel --prices
-.venv/bin/python -m app.crawler.cli.fuel --allow-demo
+.venv/bin/python -m app.fuel_ingest
+.venv/bin/python -m app.fuel_ingest --target "CA:Ontario:Toronto"
+.venv/bin/python -m app.fuel_ingest --prices
+.venv/bin/python -m app.fuel_ingest --allow-demo
 
 # whereq.cloud → administrative geography
-.venv/bin/python -m app.crawler.cli.geo
-.venv/bin/python -m app.crawler.cli.geo --target "kind:ward"
-.venv/bin/python -m app.crawler.cli.geo --boundaries
+.venv/bin/python -m app.geo_ingest
+.venv/bin/python -m app.geo_ingest --target "kind:ward"
+.venv/bin/python -m app.geo_ingest --boundaries
 
 # One content crawl, by hand
 .venv/bin/python -m app.crawler.run --list
