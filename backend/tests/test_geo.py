@@ -128,7 +128,7 @@ def test_the_geometry_is_stored_twice():
 
 # ── the targets ────────────────────────────────────────────────────────────
 def test_a_target_spec_is_parsed():
-    from app.crawler.upstream.geo_places import parse_target
+    from app.services.geo_places import parse_target
 
     t = parse_target("bbox:-80.3,43.6,-79.2,44.2")
     assert t is not None and t.bbox == "-80.3,43.6,-79.2,44.2"
@@ -147,7 +147,7 @@ def test_a_target_spec_is_parsed():
 
 
 def test_a_malformed_target_is_refused():
-    from app.crawler.upstream.geo_places import parse_target
+    from app.services.geo_places import parse_target
 
     assert parse_target("") is None
     assert parse_target("bbox:1,2,3") is None
@@ -158,7 +158,7 @@ def test_a_malformed_target_is_refused():
 
 def test_a_target_key_is_stable():
     """The key is the sync-state primary key — it must not drift."""
-    from app.crawler.upstream.geo_places import parse_target
+    from app.services.geo_places import parse_target
 
     a = parse_target("bbox:-80.3,43.6,-79.2,44.2")
     b = parse_target("bbox:-80.3,43.6,-79.2,44.2")
@@ -168,7 +168,7 @@ def test_a_target_key_is_stable():
 
 # ── the row mapping ────────────────────────────────────────────────────────
 def test_a_place_becomes_a_row():
-    from app.crawler.upstream.geo_places import place_to_row
+    from app.services.geo_places import place_to_row
 
     row = place_to_row({
         "uid": "osm:r1428125",
@@ -195,7 +195,7 @@ def test_a_place_becomes_a_row():
 
 
 def test_an_unusable_place_is_dropped():
-    from app.crawler.upstream.geo_places import place_to_row
+    from app.services.geo_places import place_to_row
 
     assert place_to_row({}) is None
     assert place_to_row({"uid": "x"}) is None
@@ -210,8 +210,8 @@ def test_the_throttle_is_shared_by_the_two_feeds():
     Two independent throttles would each allow 30/min and the pair would 429
     each other — so the fuel and the geography feeds share one limiter.
     """
-    from app.crawler.upstream import fuel_stations, geo_places
-    from app.crawler.upstream.whereq_cloud import shared_throttle
+    from app.services import fuel_stations, geo_places
+    from app.services.whereq_cloud_client import shared_throttle
 
     assert fuel_stations.shared_throttle is shared_throttle
     assert geo_places.shared_throttle is shared_throttle
@@ -220,8 +220,8 @@ def test_the_throttle_is_shared_by_the_two_feeds():
 
 
 def test_the_both_feeds_share_one_retry_policy():
-    from app.crawler.upstream import fuel_stations, geo_places
-    from app.crawler.upstream.whereq_cloud import call_with_retry
+    from app.services import fuel_stations, geo_places
+    from app.services.whereq_cloud_client import call_with_retry
 
     assert fuel_stations.call_with_retry is call_with_retry
     assert geo_places.call_with_retry is call_with_retry
@@ -250,11 +250,11 @@ def test_the_continent_scale_kinds_are_left_out_by_default():
 def test_a_bbox_target_survives_the_comma_separated_settings():
     """A bbox carries commas of its own — it must not be split apart.
 
-    ``GEO_CRAWL_TARGETS`` is comma-separated, but ``bbox:-80.3,43.6,-79.2,44.2``
+    ``GEO_INGEST_TARGETS`` is comma-separated, but ``bbox:-80.3,43.6,-79.2,44.2``
     is **one** target. Splitting on the commas turned it into four garbage
-    targets, and the crawler then crawled "kind:43.6" instead of the GTA.
+    targets, and the crawler then synced "kind:43.6" instead of the GTA.
     """
-    from app.crawler.upstream.geo_places import parse_targets
+    from app.services.geo_places import parse_targets
 
     targets = parse_targets("bbox:-80.3,43.6,-79.2,44.2")
     assert len(targets) == 1
@@ -273,12 +273,12 @@ def test_a_bbox_target_survives_the_comma_separated_settings():
 def test_the_configured_targets_are_the_whole_bbox():
     """The default coverage is the GTA viewport — one target, not four."""
     from app.core.config import settings
-    from app.crawler.upstream.geo_places import configured_targets
+    from app.services.geo_places import configured_targets
 
     targets = configured_targets()
     assert len(targets) == 1, [t.label for t in targets]
     assert targets[0].bbox is not None
-    assert targets[0].bbox == settings.GEO_CRAWL_TARGETS.split("bbox:")[1]
+    assert targets[0].bbox == settings.GEO_INGEST_TARGETS.split("bbox:")[1]
 
 
 def test_the_simplification_tolerance_is_in_degrees():
@@ -319,7 +319,7 @@ def test_the_simplification_never_moves_an_edge_further_than_asked():
 
 # ── the geometry helpers ───────────────────────────────────────────────────
 def test_the_geometry_is_taken_out_of_the_feature_collection():
-    from app.crawler.upstream.geo_places import _geometry_of
+    from app.services.geo_places import _geometry_of
 
     fc = {"type": "FeatureCollection", "features": [
         {"type": "Feature", "geometry": {"type": "Polygon", "coordinates": []}},
@@ -357,21 +357,71 @@ def test_the_migration_carries_every_column_of_the_model():
 
 
 def test_the_migration_is_the_head_of_the_chain():
+    """The chain is linear and has exactly one head.
+
+    Not "018 is the head" — that assertion breaks every time a migration is
+    added, and it is not what the test is for. What matters is that the
+    chain is unbroken and single-headed, so `alembic upgrade head` has
+    exactly one place to stop.
+    """
     from pathlib import Path
 
     versions = Path(__file__).resolve().parent.parent / "alembic" / "versions"
-    heads = {}
-    for f in versions.glob("0*.py"):
+    parents = {}
+    for f in sorted(versions.glob("0*.py")):
         text = f.read_text(encoding="utf-8")
         rev = re.search(r'^revision = "([^"]+)"', text, re.M)
-        down = re.search(r'^down_revision = "([^"]+)"', text, re.M)
-        if rev and down:
-            heads[rev.group(1)] = down.group(1)
-        elif rev:
-            heads[rev.group(1)] = None
+        if not rev:
+            continue
+        rev = rev.group(1)
+        # down_revision is normally one string; a merge would be a tuple.
+        down = re.search(r"^down_revision = (.+)$", text, re.M)
+        if down is None:
+            parents[rev] = ()
+            continue
+        raw = down.group(1).strip()
+        if raw == "None":
+            parents[rev] = ()
+        elif raw.startswith("("):
+            parents[rev] = tuple(re.findall(r'"([^"]+)"', raw))
+        else:
+            parents[rev] = (re.search(r'"([^"]+)"', raw).group(1),)
 
-    assert heads["018_geo_places"] == "017_place_cards"
-    assert [r for r, d in heads.items() if d == "018_geo_places"] == []
+    assert parents["018_geo_places"] == ("017_place_cards",)
+    # The dual-read ledger's migration follows the geo one.
+    assert parents["019_cloud_parity_checks"] == ("018_geo_places",)
+
+    roots = [r for r, d in parents.items() if not d]
+    assert len(roots) == 1, f"the chain has {len(roots)} roots: {roots}"
+
+    # A revision that is nobody's parent is a tip; there must be one.
+    all_parents = {p for d in parents.values() for p in d}
+    tips = [r for r in parents if r not in all_parents]
+    assert len(tips) == 1, f"the chain has {len(tips)} heads: {tips}"
+
+    # No revision may hang off a parent that does not exist — that is a
+    # broken chain, and `alembic upgrade head` would stop short of it.
+    for rev, downs in parents.items():
+        for d in downs:
+            assert d in parents, f"{rev} points at a missing parent {d}"
+
+    # And every revision must be reachable from the root, walking forward
+    # through the children (parents maps a revision to its parent, not the
+    # other way round).
+    children = {}
+    for rev, downs in parents.items():
+        for d in downs:
+            children.setdefault(d, []).append(rev)
+
+    seen = set()
+    stack = [roots[0]]
+    while stack:
+        current = stack.pop()
+        assert current not in seen, f"the chain loops at {current}"
+        seen.add(current)
+        stack.extend(children.get(current, []))
+    assert seen == set(parents), (
+        f"these revisions are not reachable from the root: {set(parents) - seen}")
 
 
 def test_the_migration_makes_the_gist_index_by_hand():
@@ -390,7 +440,10 @@ def test_the_migration_makes_the_gist_index_by_hand():
 def test_the_geo_settings_exist():
     from app.core.config import settings
 
-    assert settings.GEO_CRAWL_ENABLED is True
+    # The mirror is off in this installation: the geography is read from
+    # whereq.cloud live (CLOUD_READ_MODE), so a second copy held here would
+    # be the copy that goes stale. Turning the mirror on is the rollback.
+    assert settings.GEO_INGEST_ENABLED is False
     # The API allows 30 requests/minute — the same limit as the fuel ones.
-    assert settings.GEO_CRAWL_MIN_INTERVAL >= 2.0
+    assert settings.GEO_INGEST_MIN_INTERVAL >= 2.0
     assert settings.GEO_BOUNDARY_SIMPLIFY_M > 0

@@ -47,8 +47,7 @@ DEFAULT_SOURCES: list[dict] = [
         "homepage_url": "https://www.cbc.ca/news/canada/toronto",
         "default_type": "news",
         "default_city": "Toronto", "default_province": "ON", "default_country": "CA",
-        # Disabled: this feed URL is not reachable from every network. Find a
-        # working feed and re-enable it in the DB.
+        # Disabled: cbc.ca is unreachable from the PROD host (connection blocked).
         "enabled": False,
         "crawl_interval_minutes": 30,
         "config": {"item_limit": 80},

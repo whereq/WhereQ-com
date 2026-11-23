@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.crawler.upstream.fuel_stations import (
+from app.services.fuel_stations import (
     CURRENCY_BY_COUNTRY,
     UNIT_BY_COUNTRY,
     FuelTarget,
@@ -53,7 +53,7 @@ def test_parse_rejects_bad_targets():
 
 
 def test_configured_targets_dedupes(monkeypatch):
-    monkeypatch.setattr("app.crawler.upstream.fuel_stations.settings.FUEL_CRAWL_TARGETS",
+    monkeypatch.setattr("app.services.fuel_stations.settings.FUEL_INGEST_TARGETS",
                         "CA,US,ca:ontario,CA:Ontario")
     targets = configured_targets()
     assert [t.key for t in targets] == ["ca", "us", "ca:ontario"]
@@ -144,7 +144,7 @@ def test_call_with_retry_retries_429_then_succeeds(monkeypatch):
             raise whereq_cloud.WhereqError(429, "Retry in 0s", "u")
         return {"ok": True}
 
-    monkeypatch.setattr("app.crawler.upstream.whereq_cloud.time.sleep", lambda _s: None)
+    monkeypatch.setattr("app.services.whereq_cloud_client.time.sleep", lambda _s: None)
     assert call_with_retry(flaky, attempts=5) == {"ok": True}
     assert len(calls) == 3
 
@@ -155,7 +155,7 @@ def test_call_with_retry_raises_client_errors_immediately(monkeypatch):
     def bad():
         raise whereq_cloud.WhereqError(422, "Invalid request parameters", "u")
 
-    monkeypatch.setattr("app.crawler.upstream.whereq_cloud.time.sleep", lambda _s: None)
+    monkeypatch.setattr("app.services.whereq_cloud_client.time.sleep", lambda _s: None)
     with pytest.raises(whereq_cloud.WhereqError):
         call_with_retry(bad, attempts=5)
 
@@ -239,7 +239,7 @@ def test_failed_target_is_retried_without_waiting():
 
 # ── aggregated price series ─────────────────────────────────────────────────
 def test_normalize_per_litre_converts_source_units():
-    from app.crawler.upstream.fuel_prices import normalize_per_litre
+    from app.services.fuel_prices import normalize_per_litre
 
     # StatCan quotes cents per litre.
     assert normalize_per_litre("Cents per litre", 170.3) == (1.703, "CAD")
@@ -255,7 +255,7 @@ def test_normalize_per_litre_converts_source_units():
 
 
 def test_product_key_normalizes_item_names():
-    from app.crawler.upstream.fuel_prices import product_key
+    from app.services.fuel_prices import product_key
 
     assert product_key("Regular unleaded gasoline at self service filling stations") == "regular"
     assert product_key("Regular Gasoline") == "regular"
@@ -265,7 +265,7 @@ def test_product_key_normalizes_item_names():
 
 
 def test_preferred_series_picks_self_service_and_the_most_recent():
-    from app.crawler.upstream.fuel_prices import preferred_series
+    from app.services.fuel_prices import preferred_series
 
     series = [
         {"product": "regular", "item": "Regular unleaded gasoline at full service filling stations",
@@ -282,7 +282,7 @@ def test_preferred_series_picks_self_service_and_the_most_recent():
 
 
 def test_candidate_geos_prefers_the_exact_region():
-    from app.crawler.upstream.fuel_prices import _candidate_geos
+    from app.services.fuel_prices import _candidate_geos
 
     ca = _candidate_geos("CA", "Ontario", "Toronto", ["Toronto, Ontario", "Canada", "Winnipeg, Manitoba"])
     assert ca[0] == "Toronto, Ontario"
@@ -296,7 +296,7 @@ def test_candidate_geos_prefers_the_exact_region():
 def test_price_series_due_when_the_table_is_missing():
     from sqlalchemy.exc import ProgrammingError
 
-    from app.crawler.upstream.fuel_prices import price_series_due
+    from app.services.fuel_prices import price_series_due
 
     class _NoTable:
         async def execute(self, *_a, **_k):
@@ -309,7 +309,7 @@ def test_price_series_due_when_the_table_is_missing():
 
 
 def test_price_series_due_uses_the_newest_row():
-    from app.crawler.upstream.fuel_prices import price_series_due
+    from app.services.fuel_prices import price_series_due
 
     class _Result:
         def __init__(self, value):
@@ -338,7 +338,7 @@ def test_price_series_due_uses_the_newest_row():
 def test_find_stations_is_exposed_with_the_expected_filters():
     import inspect
 
-    from app.crawler.upstream.fuel_stations import find_stations
+    from app.services.fuel_stations import find_stations
 
     params = inspect.signature(find_stations).parameters
     for name in ("q", "lat", "lng", "radius_km", "bbox", "product", "sort", "limit"):
@@ -348,7 +348,7 @@ def test_find_stations_is_exposed_with_the_expected_filters():
 def test_price_column_reads_the_product_price():
     from sqlalchemy.dialects import postgresql
 
-    from app.crawler.upstream.fuel_stations import _price_column
+    from app.services.fuel_stations import _price_column
 
     compiled = str(_price_column("regular").compile(
         dialect=postgresql.dialect()))
@@ -361,7 +361,7 @@ def test_radius_condition_uses_metres_not_degrees():
     be applied on the geography or it matches the whole planet."""
     from sqlalchemy.dialects import postgresql
 
-    from app.crawler.upstream.fuel_stations import _radius_condition
+    from app.services.fuel_stations import _radius_condition
 
     sql = str(_radius_condition(-79.46, 43.84, 25).compile(
         dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}))

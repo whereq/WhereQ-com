@@ -39,14 +39,15 @@ def _deps(route):
 
 def test_the_school_boundary_endpoint_is_registered():
     paths = {r.path for r in _routes("/schools")}
-    assert "/schools/{school_id}/boundary" in paths
+    assert "/schools/{school_uid:school_uid}/boundary" in paths
 
 
 def test_the_school_boundary_is_gated():
     """The catchment polygons are the board's licensed data."""
     from app.core.security import get_current_user
 
-    route = next(r for r in _routes("/schools") if r.path == "/schools/{school_id}/boundary")
+    route = next(r for r in _routes("/schools")
+                 if r.path == "/schools/{school_uid:school_uid}/boundary")
     assert get_current_user in _deps(route)
 
 
@@ -54,7 +55,7 @@ def test_the_school_boundary_asks_for_a_session_in_the_openapi_document():
     from app.main import app
 
     spec = app.openapi()
-    op = spec["paths"]["/api/schools/{school_id}/boundary"]["get"]
+    op = spec["paths"]["/api/schools/{school_uid}/boundary"]["get"]
     assert op.get("security"), "the catchment endpoint asks for no session"
 
 
@@ -63,7 +64,7 @@ def test_the_school_boundary_answers_a_multipolygon():
     from app.schemas.school import SchoolBoundaryOut
 
     out = SchoolBoundaryOut(
-        school_id=1,
+        school_uid="ycdsb/0158",
         name="A School",
         geometry={"type": "MultiPolygon", "coordinates": []},
     )

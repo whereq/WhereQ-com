@@ -114,12 +114,12 @@ _ON_EDGE = (43.65, -79.40)
 
 
 def _place(uid: str, kind: str, name: str, source: str, geometry: dict) -> dict:
-    """A place row, as the crawl would write it.
+    """A place row, as the ingest would write it.
 
     The feed always supplies the place's own bounding box — the viewport
     filter uses it, so a place without one would never appear in a viewport.
     """
-    from app.crawler.upstream.geo_places import place_to_row
+    from app.services.geo_places import place_to_row
 
     row = place_to_row({
         "uid": uid,
@@ -143,7 +143,7 @@ def _place(uid: str, kind: str, name: str, source: str, geometry: dict) -> dict:
 
 async def _seed(sm, rows: list[dict]):
     """Write the places and the vocabulary."""
-    from app.crawler.upstream.geo_places import upsert_concepts, upsert_places
+    from app.services.geo_places import upsert_concepts, upsert_places
 
     async with sm() as s:
         await upsert_concepts(s, [
@@ -157,7 +157,7 @@ async def _seed(sm, rows: list[dict]):
 async def _sweep(sm, uids: list[str]):
     """Remove the rows this test created.
 
-    Only the places it seeded — the crawl state belongs to the installation, so
+    Only the places it seeded — the sync state belongs to the installation, so
     it is left alone (the tests never write it).
     """
     from sqlalchemy import delete
@@ -322,8 +322,8 @@ def test_the_two_vocabularies_stay_apart():
 
 
 def test_a_place_sync_does_not_wipe_an_outline_it_did_not_fetch():
-    """The coalesce in the upsert: a rows-only crawl keeps the outline."""
-    from app.crawler.upstream.geo_places import place_to_row, upsert_places
+    """The coalesce in the upsert: a rows-only sync keeps the outline."""
+    from app.services.geo_places import place_to_row, upsert_places
 
     engine = _engine()
     sm = _sessionmaker(engine)
@@ -332,7 +332,7 @@ def test_a_place_sync_does_not_wipe_an_outline_it_did_not_fetch():
         uid = f"test:{uuid.uuid4().hex[:10]}"
         await _seed(sm, [_place(uid, "ward", "Keep Outline", "osm", _SQUARE)])
 
-        # A rows-only crawl: the same place, but without the outline.
+        # A rows-only sync: the same place, but without the outline.
         row = place_to_row({
             "uid": uid, "kind": "ward", "name": "Keep Outline", "source": "osm",
             "has_boundary": True,
@@ -385,7 +385,7 @@ def test_a_failed_sync_keeps_the_last_successful_one():
     """A failure must not look like a success — and must not lose the last one."""
     from sqlalchemy import text
 
-    from app.crawler.upstream.geo_places import GeoTarget, mark_state
+    from app.services.geo_places import GeoTarget, mark_state
 
     engine = _engine()
     sm = _sessionmaker(engine)
@@ -405,7 +405,7 @@ def test_a_failed_sync_keeps_the_last_successful_one():
 
             await mark_state(s, target, error="boom")
             row = (await s.execute(query, {"k": target.key})).first()
-            # The last *successful* crawl is kept…
+            # The last *successful* sync is kept…
             assert row[0] == synced
             # …and the failure is recorded.
             assert row[1] == "boom"

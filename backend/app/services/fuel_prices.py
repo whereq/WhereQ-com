@@ -4,13 +4,13 @@
 averages per US state and PADD region (EIA), monthly metro and provincial
 averages for Canada (StatCan) and regional averages for Mexico (CRE).
 
-These are a different thing from the station prices in
-``app.crawler.upstream.fuel_stations``: a station is a single pump at a single
-address with a price right now, a series is the regional average over time.
-The map shows stations; this gives the regional context around them.
+These are a different thing from the station prices in ``app.services.
+fuel_stations``: a station is a single pump at a single address with a price
+right now, a series is the regional average over time. The map shows stations;
+this gives the regional context around them.
 
 Refreshed on a slow cadence — the underlying series are weekly or monthly, so
-a daily crawl is plenty.
+a daily sync is plenty.
 """
 
 from __future__ import annotations
@@ -39,7 +39,7 @@ _PAGE_SIZE = 100
 
 
 def configured_regions() -> list[str]:
-    """Region slugs to crawl (``ca``, ``us``, ``mx``)."""
+    """Region slugs to sync (``ca``, ``us``, ``mx``)."""
     seen: list[str] = []
     for slug in settings.FUEL_PRICES_REGIONS.split(","):
         slug = slug.strip().lower()
@@ -162,15 +162,15 @@ async def upsert_series(db: AsyncSession, series: list[dict], batch: int = 200) 
     return written
 
 
-async def crawl_price_series(db: AsyncSession, *,
+async def sync_price_series(db: AsyncSession, *,
                              regions: list[str] | None = None) -> dict[str, int]:
-    """Crawl the aggregated series for the configured regions.
+    """Sync the aggregated series for the configured regions.
 
     Returns ``{region: series written}``.
     """
     regions = regions if regions is not None else configured_regions()
     if not settings.WHEREQ_CLOUD_API_KEY:
-        logger.warning("fuel price series crawl skipped — no WHEREQ_CLOUD_API_KEY")
+        logger.warning("fuel price series sync skipped — no WHEREQ_CLOUD_API_KEY")
         return {}
 
     results: dict[str, int] = {}
@@ -259,7 +259,7 @@ def preferred_series(series: list[dict]) -> list[dict]:
 async def price_series_due(db: AsyncSession, interval_hours: int | None = None) -> bool:
     """Whether the stored series are stale enough to refresh.
 
-    The tick runs hourly but only crawls when the data is older than the
+    The tick runs hourly but only syncs when the data is older than the
     refresh interval, so a failed run (e.g. the crawler started before the
     migration) is retried within the hour instead of a whole interval later.
     """
@@ -279,7 +279,7 @@ async def price_series_due(db: AsyncSession, interval_hours: int | None = None) 
 # ── viewport resolution ─────────────────────────────────────────────────────
 @dataclass
 class ViewportRegion:
-    """The area the user is looking at, resolved from the crawled stations."""
+    """The area the user is looking at, resolved from the ingested stations."""
 
     country: str | None = None
     state: str | None = None
@@ -316,7 +316,7 @@ def series_to_dict(row: FuelPriceSeries) -> dict:
 async def resolve_viewport_region(db: AsyncSession, bbox: str | None = None) -> ViewportRegion:
     """Resolve the country/state/municipality of the fuel stations in view.
 
-    The stations we crawl carry their country, state and city, so the map
+    The stations we ingest carry their country, state and city, so the map
     viewport tells us which region the user is looking at — which in turn
     picks the matching regional price average.
     """

@@ -16,7 +16,7 @@ This lives in a service rather than in the places route because the nearby
 search filters the same vocabulary and must not reach into another route.
 """
 
-from app.crawler.upstream.fuel_stations import FUEL_CATEGORY
+from app.services.fuel_stations import FUEL_CATEGORY
 
 #: The quick-category aliases. "fuel" also covers the priced whereq.cloud
 #: stations stored as category 'gas'.

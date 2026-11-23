@@ -1,9 +1,10 @@
 """WhereQ Maps service API — /api/maps/v1 (spec §3).
 
 A keyed data API consumed server-to-server by other whereq-family apps. Auth is
-an opaque per-consumer key (Bearer wq_…); see ``app/maps/auth.py``. Phase 0
-(keys/quota/usage/healthz) + Phase 1 (autocomplete/geocode/reverse) are live
-here; /route + /matrix land in later phases.
+an opaque per-consumer key (Bearer wq_…); see ``app/maps/auth.py``. All six
+data endpoints are live here — autocomplete, geocode, reverse, route, matrix
+and staticmap — plus the staff-gated admin sub-router for minting and
+revoking keys.
 """
 
 from __future__ import annotations

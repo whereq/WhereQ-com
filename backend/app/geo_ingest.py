@@ -1,11 +1,11 @@
-"""CLI: crawl the whereq.cloud geography feed (administrative places).
+"""CLI: ingest the whereq.cloud geography feed (administrative places).
 
 Examples:
-    python -m app.crawler.cli.geo                                   # every configured target
-    python -m app.crawler.cli.geo --target "bbox:-80.3,43.6,-79.2,44.2"   # one viewport
-    python -m app.crawler.cli.geo --target "kind:ward" --target "kind:neighbourhood"
-    python -m app.crawler.cli.geo --boundaries                      # also fetch the outlines
-    python -m app.crawler.cli.geo --concepts-only                   # just refresh the vocabulary
+    python -m app.geo_ingest                                   # every configured target
+    python -m app.geo_ingest --target "bbox:-80.3,43.6,-79.2,44.2"   # one viewport
+    python -m app.geo_ingest --target "kind:ward" --target "kind:neighbourhood"
+    python -m app.geo_ingest --boundaries                      # also fetch the outlines
+    python -m app.geo_ingest --concepts-only                   # just refresh the vocabulary
 
 The geography endpoints work on the public tier, so no API key is required —
 but ``WHEREQ_CLOUD_API_KEY`` is used when present, because the key is what
@@ -25,10 +25,10 @@ import logging
 
 from app.core.database import AsyncSessionLocal
 from app.core.logging_setup import configure_logging
-from app.crawler.upstream.geo_places import (
+from app.services.geo_places import (
     configured_targets,
     parse_target,
-    run_crawl,
+    run_sync,
 )
 
 logger = logging.getLogger(__name__)
@@ -37,17 +37,17 @@ logger = logging.getLogger(__name__)
 async def _run(targets, with_boundaries: bool, concepts_only: bool) -> None:
     async with AsyncSessionLocal() as db:
         if concepts_only:
-            report = await run_crawl(db, [], with_boundaries=False)
+            report = await run_sync(db, [], with_boundaries=False)
             print(f"Refreshed {report['concepts']} concept(s).")
             return
 
-        report = await run_crawl(db, targets, with_boundaries=with_boundaries)
-        print("Crawling administrative geography:")
+        report = await run_sync(db, targets, with_boundaries=with_boundaries)
+        print("Ingesting administrative geography:")
         for row in report["targets"]:
             print(f"  {row['target']:<40} {row['places']:>6} place(s)  "
                   f"{row['boundaries']:>5} boundary(ies)")
         print(f"  {'concepts':<40} {report['concepts']:>6}")
-        print(f"Crawled {report['places']} place(s), {report['boundaries']} boundary(ies)")
+        print(f"Ingested {report['places']} place(s), {report['boundaries']} boundary(ies)")
         if report["errors"]:
             print(f"{len(report['errors'])} target(s) failed:")
             for err in report["errors"]:
@@ -56,12 +56,12 @@ async def _run(targets, with_boundaries: bool, concepts_only: bool) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Crawl the whereq.cloud geography feed (administrative places)")
+        description="Ingest the whereq.cloud geography feed (administrative places)")
     parser.add_argument("--target", action="append", default=[],
                         help="Coverage target: 'kind:<concept>', 'kind:<concept>:<country>', "
                              "'country:<CC>', 'source:<name>' or "
                              "'bbox:minLon,minLat,maxLon,maxLat' (repeatable). "
-                             "Default: the configured GEO_CRAWL_TARGETS.")
+                             "Default: the configured GEO_INGEST_TARGETS.")
     parser.add_argument("--boundaries", action="store_true",
                         help="also fetch each place's outline (slow: one request per place)")
     parser.add_argument("--concepts-only", action="store_true",
@@ -82,13 +82,13 @@ def main() -> None:
     if not targets and not args.concepts_only:
         targets = configured_targets()
         if not targets:
-            parser.error("no coverage targets configured (set GEO_CRAWL_TARGETS)")
+            parser.error("no coverage targets configured (set GEO_INGEST_TARGETS)")
 
     configure_logging()
     if args.max_places:
         from app.core.config import settings
 
-        settings.GEO_CRAWL_MAX_PLACES = args.max_places
+        settings.GEO_INGEST_MAX_PLACES = args.max_places
 
     asyncio.run(_run(targets, args.boundaries, args.concepts_only))
 

@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.core.database import engine, Base
+from app.core.logging_setup import configure_logging
 from app.core.security import get_current_user
 from app.maps.errors import MapsError, maps_error_handler, new_request_id
 from app.api.routes import (
@@ -22,8 +23,33 @@ async def lifespan(app: FastAPI):
         import app.models  # noqa: F401 — ensure all models registered
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+    # The API's own log lines were being dropped: uvicorn configures its
+    # own loggers, and nothing configured the root logger, so an INFO from
+    # the app went nowhere. The other entry points in this repo call
+    # `configure_logging()`; the API did not.
+    configure_logging()
+    _log_the_read_modes()
     yield
     await engine.dispose()
+
+
+def _log_the_read_modes() -> None:
+    """Say which copy of each migrated dataset this API is serving.
+
+    A read mode that is switched on and never announced is a read mode
+    nobody can check from the outside. The school one is here rather than
+    in the crawler's banner because the switch belongs to the API: the
+    crawler never reads schools, and the crawler's own guard is that it
+    must not be able to.
+    """
+    import logging
+
+    logger = logging.getLogger("app")
+    if (settings.SCHOOL_READ_MODE or "local").strip().lower() == "cloud":
+        logger.info(
+            "the school directory reads whereq.cloud live (SCHOOL_READ_MODE=cloud) "
+            "— the local school tables are the May import and are no longer read"
+        )
 
 
 app = FastAPI(
@@ -87,7 +113,7 @@ app.include_router(schools.router,          prefix="/api")
 # Hazards: map view is public; reporting/confirming require a token (enforced
 # per-endpoint in the router).
 app.include_router(hazards.router,          prefix="/api")
-# Fuel: station prices + the aggregated price series, crawled from whereq.cloud.
+# Fuel: station prices + the aggregated price series, synced from whereq.cloud.
 # The whole router requires a session — the price data is licensed and metered
 # upstream (the metered API key itself stays on the server).
 app.include_router(fuel.router,             prefix="/api")

@@ -1,4 +1,4 @@
-"""The whereq.cloud geography crawl — the administrative places that *contain*
+"""whereq.cloud geography ingestion — the administrative places that *contain*
 the places the map draws.
 
 The feed is a second vocabulary of place: provinces, regions, municipalities,
@@ -23,10 +23,10 @@ What this module handles:
   with all of them.
 
 Coverage is expressed as *targets* — a bbox or a kind (plus an optional
-country) — and crawled round-robin (see ``app.crawler.scheduler``) so a single
+country) — and synced round-robin (see ``app.crawler.scheduler``) so a single
 tick never pulls a whole continent.
 
-Run:  python -m app.crawler.cli.geo [--target "bbox:-80.3,43.6,-79.2,44.2"] [--boundaries]
+Run:  python -m app.geo_ingest [--target "bbox:-80.3,43.6,-79.2,44.2"] [--boundaries]
 """
 
 from __future__ import annotations
@@ -47,7 +47,7 @@ import whereq_cloud
 from whereq_cloud import WhereqError
 
 from app.core.config import settings
-from app.crawler.upstream.whereq_cloud import (
+from app.services.whereq_cloud_client import (
     Throttle,
     call_with_retry,
     client as _client,
@@ -68,7 +68,7 @@ PAGE_SIZE = 200
 # ── coverage targets ────────────────────────────────────────────────────────
 @dataclass(frozen=True)
 class GeoTarget:
-    """One area to crawl: a map bbox, or a kind (optionally within a country).
+    """One area to sync: a map bbox, or a kind (optionally within a country).
 
     ``kind`` is one of the feed's concepts ("ward", "municipality", …).
     """
@@ -201,9 +201,9 @@ def parse_targets(specs: str) -> list[GeoTarget]:
 
 
 def configured_targets() -> list[GeoTarget]:
-    """The coverage targets from ``GEO_CRAWL_TARGETS`` (deduped, ordered)."""
+    """The coverage targets from ``GEO_INGEST_TARGETS`` (deduped, ordered)."""
     seen: dict[str, GeoTarget] = {}
-    for target in parse_targets(settings.GEO_CRAWL_TARGETS):
+    for target in parse_targets(settings.GEO_INGEST_TARGETS):
         if target.key not in seen:
             seen[target.key] = target
     return list(seen.values())
@@ -211,9 +211,9 @@ def configured_targets() -> list[GeoTarget]:
 
 # ── API plumbing ────────────────────────────────────────────────────────────
 # The throttle, the retry policy and the client live in
-# ``app/crawler/upstream/whereq_cloud.py`` — the fuel crawl and the geography
-# crawl share one whereq.cloud key and therefore one 30 requests/minute
-# budget, so they must share one limiter (two would 429 each other).
+# ``app/services/whereq_cloud_client.py`` — the fuel and the geography feeds
+# share one whereq.cloud key and therefore one 30 requests/minute budget, so
+# they must share one limiter (two would 429 each other).
 
 
 # ── row mapping ─────────────────────────────────────────────────────────────
@@ -333,12 +333,12 @@ def _float_or_none(value: Any) -> float | None:
 async def upsert_places(db: AsyncSession, rows: list[dict], batch: int = 200) -> int:
     """Idempotent upsert by ``uid``. Returns rows written.
 
-    The PostGIS geometry is computed in the same statement, so a crawl never
+    The PostGIS geometry is computed in the same statement, so a sync never
     needs a second pass over the table to rebuild it: the outline arrives as
     GeoJSON and ``ST_GeomFromGeoJSON`` turns it into geometry on the way in.
 
     The outline columns are **not** overwritten by a row that has no outline.
-    A place crawl that only fetches the rows (no boundaries) must not destroy
+    A place sync that only fetches the rows (no boundaries) must not destroy
     an outline another target already fetched — so the existing outline is
     kept (``coalesce``) unless the new row carries one.
     """
@@ -461,7 +461,7 @@ async def mark_state(
     boundaries: int = 0,
     error: str | None = None,
 ) -> None:
-    """Record the outcome of a target crawl."""
+    """Record the outcome of a target sync."""
     now = datetime.now(timezone.utc)
     stmt = pg_insert(GeoSyncState).values(
         target_key=target.key,
@@ -479,13 +479,13 @@ async def mark_state(
         index_elements=[GeoSyncState.target_key],
         set_={
             "last_attempt_at": now,
-            # A failed attempt keeps the last *successful* crawl — the old value
+            # A failed attempt keeps the last *successful* sync — the old value
             # is the one in the table, not the one we tried to insert.
             "last_synced_at": (
                 now if error is None else GeoSyncState.__table__.c.last_synced_at
             ),
             # A failed attempt keeps the counts of the last *successful*
-            # crawl too — the row must not read "crawled, 0 places".
+            # sync too — the row must not read "synced, 0 places".
             "place_count": (
                 places if error is None else GeoSyncState.__table__.c.place_count
             ),
@@ -499,7 +499,7 @@ async def mark_state(
     await db.commit()
 
 
-# ── the crawl itself ─────────────────────────────────────────────────────────
+# ── the sync itself ─────────────────────────────────────────────────────────
 def fetch_places(
     client: whereq_cloud.Client, target: GeoTarget, throttle: Throttle | None = None
 ) -> list[dict]:
@@ -509,20 +509,20 @@ def fetch_places(
     """
     out: list[dict] = []
     offset = 0
-    limit = min(PAGE_SIZE, settings.GEO_CRAWL_PAGE_SIZE)
+    limit = min(PAGE_SIZE, settings.GEO_INGEST_PAGE_SIZE)
     while True:
         if throttle:
             throttle.wait()
         page = call_with_retry(
             client.geo_places,
-            attempts=settings.GEO_CRAWL_MAX_RETRIES,
+            attempts=settings.GEO_INGEST_MAX_RETRIES,
             limit=limit, offset=offset, **target.api_filters())
         rows = page.get("data") or []
         if not rows:
             break
         out.extend(rows)
-        if settings.GEO_CRAWL_MAX_PLACES and len(out) >= settings.GEO_CRAWL_MAX_PLACES:
-            return out[:settings.GEO_CRAWL_MAX_PLACES]
+        if settings.GEO_INGEST_MAX_PLACES and len(out) >= settings.GEO_INGEST_MAX_PLACES:
+            return out[:settings.GEO_INGEST_MAX_PLACES]
         offset += len(rows)
         if page.get("count") is not None and offset >= page["count"]:
             break
@@ -534,7 +534,7 @@ def fetch_boundary(client: whereq_cloud.Client, uid: str) -> dict | None:
     try:
         boundary = call_with_retry(
             client.geo_boundary,
-            attempts=settings.GEO_CRAWL_MAX_RETRIES,
+            attempts=settings.GEO_INGEST_MAX_RETRIES,
             uid=uid)
     except WhereqError as exc:
         logger.warning("geo boundary %s failed: %s", uid, exc.message)
@@ -545,18 +545,18 @@ def fetch_boundary(client: whereq_cloud.Client, uid: str) -> dict | None:
 def fetch_concepts(client: whereq_cloud.Client) -> list[dict]:
     """The vocabulary — every concept, with the feed's own counts."""
     data = call_with_retry(
-        client.geo_concepts, attempts=settings.GEO_CRAWL_MAX_RETRIES)
+        client.geo_concepts, attempts=settings.GEO_INGEST_MAX_RETRIES)
     return data.get("concepts") or []
 
 
-async def crawl_target(
+async def sync_target(
     db: AsyncSession,
     client: whereq_cloud.Client,
     target: GeoTarget,
     *,
     with_boundaries: bool = False,
 ) -> tuple[int, int]:
-    """Crawl one target. Returns ``(places, boundaries)``.
+    """Sync one target. Returns ``(places, boundaries)``.
 
     The place rows go up first, so a boundary is never attached to a place
     that is not there yet.
@@ -600,7 +600,7 @@ def _fetch_boundaries(
     return out
 
 
-async def crawl_concepts(db: AsyncSession, client: whereq_cloud.Client) -> int:
+async def sync_concepts(db: AsyncSession, client: whereq_cloud.Client) -> int:
     """Refresh the vocabulary."""
     concepts = await asyncio.to_thread(fetch_concepts, client)
     return await upsert_concepts(db, concepts)
@@ -610,11 +610,11 @@ async def crawl_concepts(db: AsyncSession, client: whereq_cloud.Client) -> int:
 async def targets_due(db: AsyncSession) -> list[GeoTarget]:
     """The targets whose refresh interval has elapsed.
 
-    A target with no state row is due (a fresh database crawls everything on
+    A target with no state row is due (a fresh database syncs everything on
     the first pass).
     """
     now = datetime.now(timezone.utc)
-    interval = settings.GEO_CRAWL_INTERVAL_HOURS
+    interval = settings.GEO_INGEST_INTERVAL_HOURS
     due: list[GeoTarget] = []
     for target in configured_targets():
         row = (
@@ -662,15 +662,15 @@ async def concepts_with_counts(db: AsyncSession) -> list[dict]:
     return out
 
 
-async def run_crawl(db: AsyncSession, targets: list[GeoTarget], *, with_boundaries: bool = False) -> dict:
-    """Crawl a list of targets with one client, reporting what happened."""
+async def run_sync(db: AsyncSession, targets: list[GeoTarget], *, with_boundaries: bool = False) -> dict:
+    """Sync a list of targets with one client, reporting what happened."""
     client = _client()
     report = {"places": 0, "boundaries": 0, "targets": [], "concepts": 0, "errors": []}
     try:
-        report["concepts"] = await crawl_concepts(db, client)
+        report["concepts"] = await sync_concepts(db, client)
         for target in targets:
             try:
-                places, boundaries = await crawl_target(
+                places, boundaries = await sync_target(
                     db, client, target, with_boundaries=with_boundaries)
                 report["places"] += places
                 report["boundaries"] += boundaries
@@ -678,10 +678,10 @@ async def run_crawl(db: AsyncSession, targets: list[GeoTarget], *, with_boundari
                     "target": target.label, "key": target.key,
                     "places": places, "boundaries": boundaries,
                 })
-                logger.info("geo crawl %s — %d place(s), %d boundary(ies)",
+                logger.info("geo sync %s — %d place(s), %d boundary(ies)",
                             target.label, places, boundaries)
             except Exception as exc:  # noqa: BLE001 - one bad target must not stop the rest
-                logger.exception("geo crawl %s failed", target.label)
+                logger.exception("geo sync %s failed", target.label)
                 # The session is in a failed transaction — without a rollback
                 # the mark below would raise too, and the remaining targets
                 # would be skipped.

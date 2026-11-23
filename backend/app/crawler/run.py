@@ -1,13 +1,4 @@
-"""The content crawler — one crawl, by hand.
-
-Discovers local news / events / stories / topics from the registered
-``news_source`` definitions, normalizes them, places them on the map,
-classifies them and upserts ``local_content`` rows.
-
-The long-running loop that does this on a timer is
-``python -m app.crawler.scheduler`` (the ``crawler`` container). This module
-is the same crawl, started by hand — useful for a first run, a one-off
-source, or a cron of your own.
+"""Crawler entry point — cron-driven on PROD.
 
 Examples:
     python -m app.crawler.run --seed                # bootstrap default sources
@@ -17,6 +8,10 @@ Examples:
     python -m app.crawler.run --all                  # crawl every enabled source now
     python -m app.crawler.run --retention            # expire stale rows
     python -m app.crawler.run --source blogto --dry-run
+
+Suggested cron (every 15 min crawl, hourly retention):
+    */15 * * * * docker exec whereq-api python -m app.crawler.run
+    0    * * * * docker exec whereq-api python -m app.crawler.run --retention
 """
 
 from __future__ import annotations

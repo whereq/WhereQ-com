@@ -4,13 +4,21 @@ Seed script — populate the database with initial demo data.
 Usage:
     cd backend
     python -m app.seed
+
+The demo accounts' passwords are **not** stored in this file. They come from
+the environment (``SEED_DEMO_PASSWORD`` / ``SEED_ADMIN_PASSWORD``) or, when
+unset, are generated randomly and printed once — a password that is committed
+to the repository is a password that everybody has.
 """
 
 import asyncio
+import os
+import secrets
 
 from sqlalchemy import select
 
 from app.core.database import engine, AsyncSessionLocal, Base
+from app.core.security import hash_password
 from app.models.user import User
 from app.models.place import Place
 from app.models.neighborhood import Neighborhood
@@ -127,17 +135,30 @@ NEIGHBORHOOD = dict(
 )
 
 
-# Demo accounts for local development.
-#
-# These rows exist so the app has something to point foreign keys at while
-# you are building. They carry NO password: authentication is delegated to
-# the OIDC provider, and the backend never issues a session of its own
-# (see app/core/security.py). A real user row is provisioned automatically
-# on the first authenticated request.
+#: The demo accounts. Their passwords are NOT here — they come from the
+#: environment or are generated per run (see ``_demo_users`` below).
 USERS = [
-    dict(username="demo", email="demo@example.invalid", locale="en", theme="dark"),
-    dict(username="admin", email="admin@example.invalid", locale="en", theme="dark"),
+    dict(username="demo", email="demo@example.invalid", env_key="SEED_DEMO_PASSWORD", locale="en", theme="dark"),
+    dict(username="admin", email="admin@example.invalid", env_key="SEED_ADMIN_PASSWORD", locale="en", theme="dark"),
 ]
+
+
+def _demo_users() -> list[dict]:
+    """The seeded users, with a password attached to each.
+
+    A password from the environment is used as given; otherwise a random one
+    is generated and returned so the caller can print it. Either way the
+    password never lives in the repository.
+    """
+    out = []
+    for u in USERS:
+        password = os.environ.get(u["env_key"], "").strip()
+        generated = False
+        if not password:
+            password = secrets.token_urlsafe(16)
+            generated = True
+        out.append({**u, "password": password, "generated": generated})
+    return out
 
 
 async def seed():
@@ -153,11 +174,13 @@ async def seed():
             return
 
         # Users
+        demo_users = _demo_users()
         users = []
-        for u in USERS:
+        for u in demo_users:
             user = User(
                 username=u["username"],
                 email=u["email"],
+                hashed_password=hash_password(u["password"]),
                 locale=u["locale"],
                 theme=u["theme"],
             )
@@ -165,6 +188,9 @@ async def seed():
             users.append(user)
         await db.flush()
         print(f"Created {len(users)} users")
+        for u in demo_users:
+            if u["generated"]:
+                print(f"  {u['username']} ({u['email']}) password: {u['password']}")
 
         # Neighborhood
         nb = Neighborhood(**NEIGHBORHOOD)

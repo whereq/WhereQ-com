@@ -10,8 +10,6 @@ A card therefore has its own table. It is a *published view of a place*: an
 anchor (the address the user named), the two things that make it personal
 (the radius and the categories of the aggregation under it), the user's own
 words, and — from the publishing phase — a revocable public identity.
-
-See ``docs/ARCHITECTURE.md`` for how it sits in the app.
 """
 
 from datetime import datetime

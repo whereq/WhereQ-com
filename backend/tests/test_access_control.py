@@ -67,7 +67,7 @@ def test_an_unowned_place_is_not_writable_by_anyone():
 
 
 def test_pipeline_managed_places_are_staff_only():
-    """An OSM / whereq.cloud row is reference data: the crawl pipeline
+    """An OSM / whereq.cloud row is reference data: the ingest pipeline
     rewrites it on the next run, so a user edit would be lost anyway."""
     for source in sorted(MANAGED_PLACE_SOURCES):
         with pytest.raises(HTTPException) as exc:

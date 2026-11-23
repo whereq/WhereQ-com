@@ -1,13 +1,13 @@
-"""The whereq.cloud fuel-station crawl — into the ``places`` table.
+"""WhereQ Cloud fuel-station ingestion into the ``places`` table.
 
-Crawls North American fuel stations (with live per-product prices) from the
+Loads North American fuel stations (with live per-product prices) from the
 whereq.cloud data API (the official ``whereq_cloud`` Python SDK) and upserts
 them as POIs (``kind='poi'``, ``category='gas'``, ``source='whereq_cloud'``)
 so they appear on the map as a dedicated "Gas Prices" quick-category alongside
 the OSM essentials.
 
 Coverage is expressed as *targets* — a country, a state/province, a city or a
-map bbox — and crawled round-robin (see ``app.crawler.scheduler``) so a single
+map bbox — and synced round-robin (see ``app.crawler.scheduler``) so a single
 tick never pulls the whole continent.
 
 Whereq Cloud specifics this module handles:
@@ -26,7 +26,7 @@ Whereq Cloud specifics this module handles:
 * **Demo mode.** Without a key the API returns a 100-row preview of the oldest
   rows and ignores paging; that preview is rejected unless explicitly allowed.
 
-Run:  python -m app.crawler.cli.fuel [--target "CA:Ontario"] [--prices]
+Run:  python -m app.fuel_ingest [--target "CA:Ontario"] [--prices]
 """
 
 from __future__ import annotations
@@ -48,7 +48,7 @@ import whereq_cloud
 from whereq_cloud import FUEL_COUNTRIES, FUEL_CURRENCIES
 
 from app.core.config import settings
-from app.crawler.upstream.whereq_cloud import (
+from app.services.whereq_cloud_client import (
     Throttle as _Throttle,
     call_with_retry,
     client as _client,
@@ -77,7 +77,7 @@ _MAX_EXTERNAL_ID = 64
 # ── coverage targets ────────────────────────────────────────────────────────
 @dataclass(frozen=True)
 class FuelTarget:
-    """One area to crawl: a country, a state/province, a city, or a map bbox.
+    """One area to sync: a country, a state/province, a city, or a map bbox.
 
     ``state`` is a full name or an ISO code — whereq.cloud accepts both
     ("Ontario" and "ON" resolve to the same rows).
@@ -143,9 +143,9 @@ def parse_target(spec: str) -> FuelTarget | None:
 
 
 def configured_targets() -> list[FuelTarget]:
-    """The coverage targets from ``FUEL_CRAWL_TARGETS`` (deduped, ordered)."""
+    """The coverage targets from ``FUEL_INGEST_TARGETS`` (deduped, ordered)."""
     seen: dict[str, FuelTarget] = {}
-    for spec in settings.FUEL_CRAWL_TARGETS.split(","):
+    for spec in settings.FUEL_INGEST_TARGETS.split(","):
         target = parse_target(spec)
         if target and target.key not in seen:
             seen[target.key] = target
@@ -154,9 +154,9 @@ def configured_targets() -> list[FuelTarget]:
 
 # ── API plumbing ────────────────────────────────────────────────────────────
 # The throttle, the retry policy and the client live in
-# ``app/crawler/upstream/whereq_cloud.py`` — the fuel crawl and the geography
-# crawl share one whereq.cloud key and therefore one 30 requests/minute
-# budget, so they must share one limiter (two would 429 each other).
+# ``app/services/whereq_cloud_client.py`` — the fuel and the geography feeds
+# share one whereq.cloud key and therefore one 30 requests/minute budget, so
+# they must share one limiter (two would 429 each other).
 
 
 # ── row mapping ─────────────────────────────────────────────────────────────
@@ -229,7 +229,7 @@ def station_to_row(station: dict, *, country_hint: str | None = None) -> dict | 
 async def upsert_places(db: AsyncSession, rows: list[dict], batch: int = 500) -> int:
     """Idempotent upsert by ``(source, external_id)``. Returns rows written.
 
-    The PostGIS point is computed in the same statement, so a crawl never needs
+    The PostGIS point is computed in the same statement, so a sync never needs
     a second pass over the table to rebuild geometry.
     """
     written = 0
@@ -273,7 +273,7 @@ def _iter_stations(client: whereq_cloud.Client, *, target: FuelTarget,
     explicitly asked for the demo rows.
     """
     filters = target.api_filters()
-    page_size = max(1, min(settings.FUEL_CRAWL_PAGE_SIZE, 500))
+    page_size = max(1, min(settings.FUEL_INGEST_PAGE_SIZE, 500))
     offset = 0
     fetched = 0
 
@@ -281,7 +281,7 @@ def _iter_stations(client: whereq_cloud.Client, *, target: FuelTarget,
         throttle.wait()
         page = call_with_retry(
             client.fuel_stations,
-            attempts=settings.FUEL_CRAWL_MAX_RETRIES,
+            attempts=settings.FUEL_INGEST_MAX_RETRIES,
             limit=page_size, offset=offset, **filters)
         stations = page.get("stations") or []
         if not stations:
@@ -296,7 +296,7 @@ def _iter_stations(client: whereq_cloud.Client, *, target: FuelTarget,
         yield from stations
         fetched += len(stations)
         if fetched >= max_stations:
-            logger.warning("fuel crawl for %s stopped at the %d-station cap",
+            logger.warning("fuel sync for %s stopped at the %d-station cap",
                            target.label, max_stations)
             return
         offset += len(stations)
@@ -321,11 +321,11 @@ def _collect_rows(target: FuelTarget, throttle: _Throttle, cap: int,
     return rows
 
 
-async def crawl_target(db: AsyncSession, target: FuelTarget, *,
+async def sync_target(db: AsyncSession, target: FuelTarget, *,
                       allow_demo: bool = False,
                       max_stations: int | None = None) -> int:
-    """Crawl one coverage target. Returns the number of stations written."""
-    cap = max_stations if max_stations is not None else settings.FUEL_CRAWL_MAX_STATIONS
+    """Sync one coverage target. Returns the number of stations written."""
+    cap = max_stations if max_stations is not None else settings.FUEL_INGEST_MAX_STATIONS
     throttle = shared_throttle
 
     # The SDK is synchronous (and the throttle sleeps), so the fetch runs in a
@@ -333,20 +333,20 @@ async def crawl_target(db: AsyncSession, target: FuelTarget, *,
     rows = await asyncio.to_thread(_collect_rows, target, throttle, cap, allow_demo)
 
     if not rows:
-        logger.info("fuel crawl %s: no stations returned", target.label)
+        logger.info("fuel sync %s: no stations returned", target.label)
         return 0
 
     written = await upsert_places(db, list(rows.values()))
     await db.commit()
-    logger.info("fuel crawl %s: %d stations", target.label, written)
+    logger.info("fuel sync %s: %d stations", target.label, written)
     return written
 
 
-async def crawl_fuel_stations(db: AsyncSession, *,
+async def ingest_fuel_stations(db: AsyncSession, *,
                                targets: list[FuelTarget] | None = None,
                                allow_demo: bool = False,
                                max_stations: int | None = None) -> dict[str, int]:
-    """Crawl every given target (default: the configured ones).
+    """Sync every given target (default: the configured ones).
 
     Returns ``{target label: stations written}``.
     """
@@ -354,10 +354,10 @@ async def crawl_fuel_stations(db: AsyncSession, *,
     results: dict[str, int] = {}
     for target in targets:
         try:
-            results[target.label] = await crawl_target(
+            results[target.label] = await sync_target(
                 db, target, allow_demo=allow_demo, max_stations=max_stations)
         except whereq_cloud.WhereqError as exc:
-            logger.warning("fuel crawl %s failed: %s", target.label, exc)
+            logger.warning("fuel sync %s failed: %s", target.label, exc)
             results[target.label] = 0
     return results
 
@@ -391,7 +391,7 @@ async def find_stations(db: AsyncSession, *, q: str | None = None,
                         limit: int = 20) -> list[dict]:
     """Gas stations with their prices — nearest first, or cheapest first.
 
-    This reads the rows we already crawled from whereq.cloud, so it costs
+    This reads the rows we already synced from whereq.cloud, so it costs
     nothing metered and never touches the upstream API.
     """
     conds = [Place.source == FUEL_SOURCE]
@@ -465,35 +465,35 @@ async def find_stations(db: AsyncSession, *, q: str | None = None,
     return out
 
 
-# ── crawl bookkeeping ────────────────────────────────────────────────────────
+# ── sync bookkeeping ────────────────────────────────────────────────────────
 async def sync_states(db: AsyncSession) -> dict[str, FuelSyncState]:
     """All recorded target states, keyed by target key.
 
     Tolerates a missing table: the crawler can start before the migration has
-    run, and losing the bookkeeping is better than losing the crawl itself.
+    run, and losing the bookkeeping is better than losing the sync itself.
     """
     try:
         rows = (await db.execute(select(FuelSyncState))).scalars().all()
     except SQLAlchemyError as exc:
-        logger.warning("fuel crawl state unavailable (%s) — continuing without it", exc)
+        logger.warning("fuel sync state unavailable (%s) — continuing without it", exc)
         return {}
     return {r.target_key: r for r in rows}
 
 
 def is_due(state: FuelSyncState | None, interval_hours: int) -> bool:
-    """A target is due when it has never crawled or its last crawl is stale."""
+    """A target is due when it has never synced or its last sync is stale."""
     if state is None or state.last_synced_at is None:
         return True
     if state.last_error:
-        # A failed crawl should not wait a full interval before being retried.
+        # A failed sync shouldn't wait a full interval before being retried.
         return True
     age = datetime.now(timezone.utc) - state.last_synced_at
     return age >= timedelta(hours=interval_hours)
 
 
-async def record_crawl(db: AsyncSession, target: FuelTarget, *,
+async def record_sync(db: AsyncSession, target: FuelTarget, *,
                       station_count: int, error: str | None = None) -> None:
-    """Persist the outcome of a target crawl."""
+    """Persist the outcome of a target sync."""
     now = datetime.now(timezone.utc)
     try:
         state = await db.get(FuelSyncState, target.key)
@@ -513,16 +513,16 @@ async def record_crawl(db: AsyncSession, target: FuelTarget, *,
             state.last_error = error[:500]
         await db.commit()
     except SQLAlchemyError as exc:
-        # Bookkeeping must never lose a completed crawl.
+        # Bookkeeping must never lose a completed sync.
         await db.rollback()
-        logger.warning("could not record the fuel crawl state for %s: %s", target.key, exc)
+        logger.warning("could not record the fuel sync state for %s: %s", target.key, exc)
 
 
 async def due_targets(db: AsyncSession, targets: list[FuelTarget] | None = None,
                        interval_hours: int | None = None) -> list[FuelTarget]:
-    """Targets whose refresh is due, oldest crawl first."""
+    """Targets whose refresh is due, oldest sync first."""
     targets = targets if targets is not None else configured_targets()
-    interval = interval_hours if interval_hours is not None else settings.FUEL_CRAWL_INTERVAL_HOURS
+    interval = interval_hours if interval_hours is not None else settings.FUEL_INGEST_INTERVAL_HOURS
     states = await sync_states(db)
     due = [t for t in targets if is_due(states.get(t.key), interval)]
     due.sort(key=lambda t: (states[t.key].last_synced_at if t.key in states and

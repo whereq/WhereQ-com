@@ -3,7 +3,7 @@
 Two tables sit alongside the ``places`` rows that carry station-level prices:
 
 - ``FuelSyncState``  — one row per coverage target (a country, a state, a
-  municipality or a bbox), recording when it was last crawled, how many
+  municipality or a bbox), recording when it was last synced, how many
   stations came back and whether the last attempt failed. The crawler uses it
   to rotate targets round-robin instead of re-pulling everything on every tick.
 - ``FuelPriceSeries`` — the *aggregated* price series behind the charts
@@ -23,7 +23,7 @@ from app.core.database import Base
 
 
 class FuelSyncState(Base):
-    """Crawl bookkeeping for one fuel coverage target."""
+    """Sync bookkeeping for one fuel coverage target."""
 
     __tablename__ = "fuel_sync_state"
 
@@ -38,7 +38,7 @@ class FuelSyncState(Base):
     last_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     station_count: Mapped[int] = mapped_column(Integer, default=0)
-    # Set when the last attempt failed; cleared on a successful crawl.
+    # Set when the last attempt failed; cleared on a successful sync.
     last_error: Mapped[str | None] = mapped_column(Text)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
