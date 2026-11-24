@@ -177,7 +177,7 @@ WhereQ-com/
 │   └── package.json
 ├── db/schema.sql             a snapshot of the schema (Alembic is the source of truth)
 ├── docker/                   Dockerfiles, nginx config, the Compose stack
-├── docs/                     architecture, setup, crawler, data sources
+├── docs/                     architecture, setup, crawler, data sources, the origin
 └── .github/                  CI, issue and pull-request templates
 ```
 
@@ -185,6 +185,7 @@ WhereQ-com/
 
 | Document | What it covers |
 |---|---|
+| [docs/WHY-WE-BUILT.md](docs/WHY-WE-BUILT.md) | Why the app exists — the idea, the neighbourhood thinking, and the distance question. |
 | [docs/SETUP.md](docs/SETUP.md) | Getting it running: ports, keys, sign-in, the crawler, the crawl commands. |
 | [docs/CRAWLER.md](docs/CRAWLER.md) | The retrieval layer: the upstreams, the targets, the content feeds. |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | The system end to end — layers, data flow, the auth model, the background jobs. |
