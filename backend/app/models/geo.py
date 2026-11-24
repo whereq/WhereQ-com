@@ -136,11 +136,11 @@ class GeoConcept(Base):
 
 
 class GeoSyncState(Base):
-    """Crawl bookkeeping for one geography coverage target.
+    """Sync bookkeeping for one geography coverage target.
 
     Mirrors ``fuel_sync_state``: the crawler rotates targets round-robin so a
     single tick never pulls a whole country, and this row remembers when the
-    target was last crawled and whether it failed.
+    target was last synced and whether it failed.
     """
 
     __tablename__ = "geo_sync_state"
@@ -156,7 +156,7 @@ class GeoSyncState(Base):
     last_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     place_count: Mapped[int] = mapped_column(Integer, default=0)
     boundary_count: Mapped[int] = mapped_column(Integer, default=0)
-    # Set when the last attempt failed; cleared on a successful crawl.
+    # Set when the last attempt failed; cleared on a successful sync.
     last_error: Mapped[str | None] = mapped_column(Text)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

@@ -1,7 +1,7 @@
-"""Places: PostGIS geom + crawl provenance (source/external_id)
+"""Places: PostGIS geom + ingest provenance (source/external_id)
 
 Adds a PostGIS POINT geometry (GiST-indexed) for viewport queries and
-source/external_id columns for idempotent POI crawls (e.g. OpenStreetMap).
+source/external_id columns for idempotent POI ingestion (e.g. OpenStreetMap).
 Backfills geom from existing latitude/longitude.
 
 Revision ID: 007_places_geo
@@ -32,7 +32,7 @@ def upgrade() -> None:
     op.create_index("ix_places_source", "places", ["source"])
     op.create_index("ix_places_external_id", "places", ["external_id"])
     op.execute("CREATE INDEX ix_places_geom ON places USING GIST (geom)")
-    # One row per crawled feature; lets us upsert by provenance.
+    # One row per ingested feature; lets us upsert by provenance.
     op.execute("CREATE UNIQUE INDEX uq_places_source_external "
                "ON places (source, external_id) WHERE external_id IS NOT NULL")
 

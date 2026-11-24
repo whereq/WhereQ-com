@@ -24,7 +24,7 @@ class Place(Base):
     sub: Mapped[str | None] = mapped_column(String(255))
     metadata_json: Mapped[dict | None] = mapped_column(JSONB, default=dict)
     view_count: Mapped[int] = mapped_column(Integer, default=0)
-    # Provenance for crawled POIs (e.g. source="osm", external_id="node/123"),
+    # Provenance for ingested POIs (e.g. source="osm", external_id="node/123"),
     # used for idempotent upserts. Manual rows leave these null/"manual".
     source: Mapped[str] = mapped_column(String(16), default="manual", index=True)
     external_id: Mapped[str | None] = mapped_column(String(64), index=True)

@@ -49,7 +49,7 @@ export function SchoolTable({ t, rows, total, page, per, sort, loading, onOpen, 
         </thead>
         <tbody>
           {rows.map((s) => (
-            <tr key={s.id} onClick={() => onOpen(s)}>
+            <tr key={s.uid} onClick={() => onOpen(s)}>
               <td className="sc-td-name"><span className="sc-dot" style={{ background: schoolColor({ type: s.type, board_type: s.board?.type, programs: s.programs }) }} />{s.name}</td>
               <td><TypeBadges school={s} /></td>
               <td className="sc-muted">{s.board?.name ?? '—'}</td>

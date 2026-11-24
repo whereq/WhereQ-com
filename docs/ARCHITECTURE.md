@@ -52,14 +52,16 @@ administrative boundaries — and the cards that describe them.
 |---|---|---|
 | HTTP | `app/api/routes/` | Thin. Parse, delegate, serialise. No business logic. |
 | Domain | `app/services/` | The business logic — geocoding, routing, taxonomy, dedup. |
-| Retrieval | `app/crawler/` | Everything the app pulls from the outside world. `upstream/` is one module per upstream; the rest is the content crawl and the scheduler. |
+| Retrieval | `app/crawler/` | The content crawl and the scheduler — everything the app pulls from the outside world. |
+| The upstream feeds | `app/services/cloud_*.py`, `app/services/{fuel_stations,fuel_prices,geo_places,osm_places}.py` | One module per upstream. The `cloud_*` modules **read** whereq.cloud; the others **ingest** into the local tables. |
 | Persistence | `app/models/` | SQLAlchemy ORM models. |
 | I/O | `app/schemas/` | Pydantic request and response models. |
 | Cross-cutting | `app/core/` | Settings, the database engine, security, permissions, logging. |
 
 A route that grows logic belongs in `app/services/`. A service that grows SQL
 belongs in `app/models/`. A module that *fetches* something belongs in
-`app/crawler/upstream/`.
+`app/services/` — with the upstream feeds named `cloud_*` when they read
+whereq.cloud live.
 
 ### Request flow
 

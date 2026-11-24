@@ -1,7 +1,7 @@
 """WhereQ Maps service domain.
 
 A keyed data API (``/api/maps/v1``) consumed server-to-server by other
-applications. Auth is an opaque per-consumer key
+other applications. Auth is an opaque per-consumer key
 (``wq_<env>_<random>``); only the sha256 hash + a short prefix are stored.
 
 - ``MapsApiConsumer`` — one keyed app, with scopes + per-key limits.

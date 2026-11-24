@@ -15,11 +15,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# The lockfile is what gets installed — it pins every transitive dependency
-# too, so the image carries the tree that was tested. requirements.txt is the
-# readable list of the direct dependencies.
-COPY backend/requirements.txt backend/requirements.lock ./
-RUN pip install --no-cache-dir --prefix=/install -r requirements.lock
+COPY backend/requirements.txt ./
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 # -----------------------------------------------------------------------------
 # Stage 2: Runtime — minimal production image

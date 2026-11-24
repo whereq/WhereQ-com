@@ -15,6 +15,11 @@ pydantic-settings==2.14.2
 python-dotenv==1.0.1
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
+# bcrypt must stay on 4.0.x: passlib 1.7.4 reads `bcrypt.__about__`, which
+# bcrypt 5.x removed, so hash_password() raises "password cannot be longer
+# than 72 bytes" for EVERY password. Pin it explicitly — the [bcrypt] extra
+# would otherwise float up to 5.x on a fresh install.
+bcrypt==4.0.1
 python-multipart==0.0.12
 httpx==0.27.2
 email-validator==2.2.0
@@ -23,8 +28,16 @@ websockets==17.0.1
 feedparser==6.0.11
 beautifulsoup4==4.12.3
 lxml==6.1.1
-# whereq.cloud data feeds (fuel stations + prices + geography)
-whereq.cloud==0.6.0
+# whereq.cloud data feeds (fuel stations + prices + geography + schools)
+# 0.7.0 adds the /v1/local and /v1/schools endpoints, so this app can read
+# the metro layer and the school directory through the published SDK instead
+# of mirroring them. 0.7.1 adds the school's filters and ordering. 0.8.0 adds
+# the geography methods — `geo_boundaries(...)` serves a whole viewport's
+# outlines in one request — and 0.8.1 adds its `exclude_kind` parameter.
+#
+# The floor is `>=` rather than `==` on purpose: the SDK's contract is
+# frozen, so a patch release needs no code change here.
+whereq.cloud>=0.8.1
 # Tests
 pytest==8.3.3
 pytest-asyncio==0.24.0

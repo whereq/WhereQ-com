@@ -68,14 +68,14 @@ function MapLayer({ t, filters, query, selected, showBoundary, cluster, canBound
   selected: SchoolDetail | null; showBoundary: boolean; cluster: boolean
   canBoundary: boolean; onGated: () => void
   focusBounds: [number, number, number, number] | null; focusNonce: number
-  onSelect: (id: number) => void
+  onSelect: (uid: string) => void
   onAtPoint: (hits: CatchmentHit[], at: { lat: number; lng: number }) => void
 }) {
   const map = useMap()
   // The marker library is loaded on demand; AdvancedMarkerElement needs it.
   const AdvancedMarkerElement = useMapsLibrary('marker')?.AdvancedMarkerElement
-  const markers = useRef<Map<number, google.maps.marker.AdvancedMarkerElement>>(new Map())
-  const bigPins = useRef<Set<number>>(new Set())
+  const markers = useRef<Map<string, google.maps.marker.AdvancedMarkerElement>>(new Map())
+  const bigPins = useRef<Set<string>>(new Set())
   const polys = useRef<google.maps.Polygon[]>([])
   const selMarker = useRef<google.maps.marker.AdvancedMarkerElement | null>(null)
   const reqId = useRef(0)
@@ -154,7 +154,7 @@ function MapLayer({ t, filters, query, selected, showBoundary, cluster, canBound
         const cap = pins.length > PIN_CAP
         const shown = cap ? pins.slice(0, PIN_CAP) : pins
         setCapped(cap); setCount(pins.length)
-        const next = new Set(shown.map((p) => p.id))
+        const next = new Set(shown.map((p) => p.uid))
         // remove stale
         for (const [mid, mk] of markers.current) {
           if (!next.has(mid)) {
@@ -165,9 +165,9 @@ function MapLayer({ t, filters, query, selected, showBoundary, cluster, canBound
         }
         // add / update
         for (const p of shown) {
-          let mk = markers.current.get(p.id)
+          let mk = markers.current.get(p.uid)
           const color = pinColor(p)
-          const isSelected = p.id === selected?.id
+          const isSelected = p.uid === selected?.uid
           if (!mk) {
             // No `map` here: while clustering is on the clusterer owns the
             // placement, and applyMarkers() puts the pin on the map itself
@@ -183,14 +183,14 @@ function MapLayer({ t, filters, query, selected, showBoundary, cluster, canBound
             })
             // Advanced markers fire 'gmp-click' — and they want the modern
             // addEventListener, not the deprecated addListener.
-            mk.addEventListener('gmp-click', () => onSelect(p.id))
-            markers.current.set(p.id, mk)
-            if (isSelected) bigPins.current.add(p.id)
-          } else if (bigPins.current.has(p.id) !== isSelected) {
+            mk.addEventListener('gmp-click', () => onSelect(p.uid))
+            markers.current.set(p.uid, mk)
+            if (isSelected) bigPins.current.add(p.uid)
+          } else if (bigPins.current.has(p.uid) !== isSelected) {
             // Only the selected school's pin is drawn larger.
             mk.content = pinContent(color, isSelected)
-            if (isSelected) bigPins.current.add(p.id)
-            else bigPins.current.delete(p.id)
+            if (isSelected) bigPins.current.add(p.uid)
+            else bigPins.current.delete(p.uid)
           }
         }
         applyMarkers(map)
@@ -200,7 +200,7 @@ function MapLayer({ t, filters, query, selected, showBoundary, cluster, canBound
     const l = map.addListener('idle', onIdle)
     fetchPins()
     return () => { window.clearTimeout(timer); l.remove() }
-  }, [map, filters, query, selected?.id, applyMarkers, AdvancedMarkerElement])
+  }, [map, filters, query, selected?.uid, applyMarkers, AdvancedMarkerElement])
 
   // boundary polygons of the selected school
   useEffect(() => {
@@ -235,7 +235,7 @@ function MapLayer({ t, filters, query, selected, showBoundary, cluster, canBound
     mk.map = map
     selMarker.current = mk
     return () => { if (selMarker.current) { selMarker.current.map = null; selMarker.current = null } }
-  }, [map, selected?.id, AdvancedMarkerElement])
+  }, [map, selected?.uid, AdvancedMarkerElement])
 
   // recenter on selection — fit the whole catchment when we have a boundary,
   // otherwise just center the school point
@@ -252,7 +252,7 @@ function MapLayer({ t, filters, query, selected, showBoundary, cluster, canBound
       map.panTo({ lat: selected.lat, lng: selected.lng })
       if ((map.getZoom() ?? 0) < 13) map.setZoom(14)
     }
-  }, [map, selected?.id, showBoundary])
+  }, [map, selected?.uid, showBoundary])
 
   // explicit "Search" → fly the map to the extent of the matching schools
   // (e.g. selecting a school board relocates the map to that board's area).
@@ -297,7 +297,7 @@ export function SchoolMap({ t, theme, filters, query, selected, showBoundary, cl
   center: { lat: number; lng: number }
   canBoundary: boolean; onGated: () => void
   focusBounds: [number, number, number, number] | null; focusNonce: number
-  onSelect: (id: number) => void
+  onSelect: (uid: string) => void
   onAtPoint: (hits: CatchmentHit[], at: { lat: number; lng: number }) => void
 }) {
   return (

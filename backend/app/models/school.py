@@ -6,6 +6,22 @@ History:    crawl_snapshot (append-only raw archive) + school_version (SCD-2)
 
 Coordinates are WGS84 (SRID 4326). Boundaries are stored twice: `geojson` (raw
 fidelity) and `geom` (PostGIS, for spatial queries / GiST index).
+
+THESE TABLES ARE THE LEGACY MIRROR
+----------------------------------
+They were whereq.com's own copy: filled by its own board crawl and its own
+HouseSigma import. **Nothing writes to them any more.** The collection
+moved to whereq.cloud, and production reads the schools from there
+(`SCHOOL_READ_MODE=cloud`).
+
+They are kept rather than dropped for two reasons: they are the rollback
+path, and deleting collected data is not this project's habit. They are
+also *stale* — whereq.cloud holds 2 647 schools against these tables'
+2 528, and its version history is 822 rows longer, because whereq.cloud
+collects the boards live and this app's crawler was cut.
+
+So: read these tables as history. Where a school is looked up for a
+response, it comes from `app.services.cloud_schools`.
 """
 
 from datetime import datetime
@@ -149,6 +165,11 @@ class School(Base):
     province_id: Mapped[int] = mapped_column(ForeignKey("province.id"), nullable=False, index=True)
     board_id: Mapped[int | None] = mapped_column(ForeignKey("school_board.id"), index=True)
     slug: Mapped[str] = mapped_column(String(255), nullable=False)
+    # The cross-system key: the board's slug and the school's own code,
+    # joined by a slash — `ycdsb/0158`. whereq.cloud's routes take it, and
+    # it is what the dual-read window joins on. Filled from whereq.cloud by
+    # scripts/seed_school_uids.py; NULL until that runs.
+    uid: Mapped[str | None] = mapped_column(String(255), index=True)
     name: Mapped[str] = mapped_column(String(512), nullable=False, index=True)
     type: Mapped[str | None] = mapped_column(String(32), index=True)  # elementary|secondary|…
     status: Mapped[str | None] = mapped_column(String(32))

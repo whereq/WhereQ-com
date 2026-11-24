@@ -1,15 +1,28 @@
+import logging
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.permissions import require_place_write_access
 from app.core.security import Principal, get_optional_user, get_principal
 from app.models.place import Place
 from app.models.user import User
 from app.schemas.place import PlaceCreate, PlacePin, PlaceRead, PlaceUpdate
-from app.services.place_dedup import shadowed_stations
+from app.services.cloud_fuel import station_external_id
+from app.services.fuel_stations import (
+    CURRENCY_BY_COUNTRY,
+    FUEL_CATEGORY,
+    FUEL_SOURCE,
+    UNIT_BY_COUNTRY,
+)
+from app.services.place_dedup import shadowed_by_stations, shadowed_stations
 from app.services.place_taxonomy import expand_categories
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/places", tags=["places"])
 
@@ -154,7 +167,15 @@ async def places_map(
     db: AsyncSession = Depends(get_db),
 ):
     """Lightweight pins inside the viewport, filtered by kind and/or POI category
-    (and, for food, optional cuisine)."""
+    (and, for food, optional cuisine).
+
+    **The fuel pins may come from whereq.cloud.** When the fuel category is on
+    and ``FUEL_READ_MODE`` is ``cloud``, the priced stations are read from the
+    platform live and merged into the answer — the local mirror is not read
+    for them at all. A live station's pin id is the **negative** of the
+    upstream's station id, unless the user has saved that station, in which
+    case it is the id of the row whereq.com keeps for it.
+    """
     conds = []
     bb = _parse_bbox(bbox)
     envelope = None
@@ -174,25 +195,117 @@ async def places_map(
 
     stmt = select(Place.id, Place.name, Place.latitude, Place.longitude, Place.kind,
                   Place.category, Place.sub).where(*conds)
-    # "fuel" also serves the priced whereq.cloud stations — drop the OSM row of
-    # any station that whereq.cloud already covers, so it is shown once.
+
+    live_pins: list[PlacePin] = []
+    live_points: list[tuple[float, float]] = []
+    if _live_fuel() and "fuel" in expand_categories(cat_list):
+        # The priced stations are read from whereq.cloud, so the mirrored rows
+        # are not read at all.
+        stmt = stmt.where(Place.source != FUEL_SOURCE)
+        live_pins, live_points = await _live_fuel_pins(db, bbox=bbox, limit=limit)
+
     if "fuel" in expand_categories(cat_list):
-        stmt = stmt.where(Place.id.not_in(_shadowed_stations(envelope)))
-    rows = (await db.execute(stmt.limit(limit))).all()
-    return [PlacePin(id=r[0], name=r[1], lat=r[2], lng=r[3], kind=r[4], category=r[5], sub=r[6])
+        if live_points:
+            # The live stations shadow the OSM rows they cover, so a station
+            # is shown once — the priced one wins.
+            shadowed = await shadowed_by_stations(db, live_points)
+            if shadowed:
+                stmt = stmt.where(Place.id.not_in(shadowed))
+        else:
+            # "fuel" also serves the priced whereq.cloud stations — drop the
+            # OSM row of any station that whereq.cloud already covers, so it
+            # is shown once.
+            stmt = stmt.where(Place.id.not_in(_shadowed_stations(envelope)))
+
+    rows = (await db.execute(stmt.limit(max(0, limit - len(live_pins))))).all()
+    pins = [PlacePin(id=r[0], name=r[1], lat=r[2], lng=r[3], kind=r[4], category=r[5], sub=r[6])
             for r in rows]
+    # The live pins are counted against the limit too: the answer is at most
+    # `limit` pins, and the room the fuel stations take is the room the local
+    # rows give up.
+    return pins + live_pins
+
+
+def _live_fuel() -> bool:
+    """Whether the fuel stations are read from whereq.cloud rather than here."""
+    return (settings.FUEL_READ_MODE or "local").strip().lower() == "cloud"
+
+
+async def _live_fuel_pins(db: AsyncSession, *, bbox: str | None,
+                          limit: int) -> tuple[list[PlacePin], list[tuple[float, float]]]:
+    """The priced stations of a viewport, read from whereq.cloud, as map pins.
+
+    The upstream answers a viewport in pages of 500 and reports how many
+    stations there are in total, so the pages are read until the viewport's
+    stations are in hand — a viewport holding more than one page used to be
+    cut at 500, and half of Toronto's stations never reached the map.
+
+    The **pin id** is the negative of the upstream's station id — the local
+    place ids are positive, so the two spaces cannot collide, and a card can
+    tell a live station from a stored place by the sign. A station the user
+    has saved is the exception: whereq.com keeps a row for it, and the pin
+    carries that row's id, so the saved state and the map agree.
+
+    Returns the pins and the station positions, so the caller can drop the
+    OSM rows the stations shadow.
+    """
+    import asyncio
+
+    from app.services.cloud_fuel import fetch_stations_paged, materialised_ids
+
+    try:
+        payload = await asyncio.to_thread(
+            fetch_stations_paged, bbox=bbox, max_rows=limit)
+    except Exception as exc:  # noqa: BLE001 — the upstream may fail in any way
+        logger.warning("cloud fuel: the map stations could not be read — %s", exc)
+        return [], []
+
+    stations = payload.get("stations") or []
+    if not stations:
+        return [], []
+
+    saved = await materialised_ids(db, stations)
+
+    pins: list[PlacePin] = []
+    points: list[tuple[float, float]] = []
+    for station in stations:
+        ext = station_external_id(station)
+        lat, lng = station.get("lat"), station.get("lon")
+        if lat is None or lng is None:
+            continue
+        points.append((lng, lat))
+        # The live pin id is the negative of the upstream's station id. A
+        # station without an id would land on 0 — a *local* place id — so it
+        # is pushed to -1 and stays on the live side of the sign.
+        live_id = -abs(int(station.get("id") or 0)) or -1
+        pins.append(PlacePin(
+            id=saved.get(ext, live_id),
+            name=(station.get("name") or station.get("brand") or "Fuel station")[:255],
+            lat=lat, lng=lng,
+            kind="poi", category=FUEL_CATEGORY, sub=station.get("brand"),
+        ))
+    return pins[:limit], points
 
 
 @router.get("/counts")
 async def places_counts(bbox: str | None = None, db: AsyncSession = Depends(get_db)) -> dict[str, int]:
     """Counts within the viewport by kind, plus `cat:<category>` for POIs —
-    matches the shape the sidebar consumes (essentials + quick categories)."""
+    matches the shape the sidebar consumes (essentials + quick categories).
+
+    **The fuel count may come from whereq.cloud.** When the stations are read
+    live, the upstream reports the number of stations in the viewport, and the
+    mirrored rows are not counted at all.
+    """
     conds = []
     bb = _parse_bbox(bbox)
     if bb:
         mnlng, mnlat, mxlng, mxlat = bb
         conds.append(func.ST_Intersects(
             Place.geom, func.ST_MakeEnvelope(mnlng, mnlat, mxlng, mxlat, 4326)))
+
+    if _live_fuel():
+        # The mirrored stations are not part of the local answer any more.
+        conds.append(Place.source != FUEL_SOURCE)
 
     counts: dict[str, int] = {}
     for kind, n in (await db.execute(
@@ -202,7 +315,33 @@ async def places_counts(bbox: str | None = None, db: AsyncSession = Depends(get_
             select(Place.category, func.count())
             .where(*conds, Place.kind == "poi").group_by(Place.category))).all():
         counts[f"cat:{cat}"] = n
+
+    if _live_fuel() and bbox:
+        live = await _live_fuel_count(bbox)
+        if live is not None:
+            # The priced stations are the `gas` bucket; `cat:fuel` keeps
+            # counting the generic OSM fuel POIs, exactly as it did before.
+            counts["cat:gas"] = live
     return counts
+
+
+async def _live_fuel_count(bbox: str) -> int | None:
+    """How many priced stations whereq.cloud holds for this viewport.
+
+    The upstream reports the total with the page, so one request is enough —
+    and the page itself is not read.
+    """
+    import asyncio
+
+    from app.services.cloud_fuel import fetch_stations
+
+    try:
+        payload = await asyncio.to_thread(fetch_stations, bbox=bbox, limit=1)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("cloud fuel: the station count could not be read — %s", exc)
+        return None
+    total = payload.get("total")
+    return int(total) if total is not None else len(payload.get("stations") or [])
 
 
 @router.get("/{place_id}", response_model=PlaceRead)
@@ -211,6 +350,21 @@ async def get_place(
     user: User | None = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db),
 ):
+    """One place, in full.
+
+    **A negative id is a live fuel station.** The map's fuel pins are read from
+    whereq.cloud when ``FUEL_READ_MODE`` is ``cloud``, and their ids are the
+    negative of the upstream's station ids — the local place ids are positive,
+    so the sign tells the two apart. The card is then served from the
+    upstream, re-shaped into this app's place shape.
+
+    The prices are the licensed part: they are included for a signed-in
+    caller and stripped for an anonymous one, exactly as they are for a
+    mirrored station.
+    """
+    if place_id < 0:
+        return await _live_fuel_place(place_id, user is not None)
+
     place = await db.get(Place, place_id)
     if not place:
         raise HTTPException(status_code=404, detail="Place not found")
@@ -218,6 +372,59 @@ async def get_place(
     await db.commit()
     await db.refresh(place)
     return _read(place, include_prices=user is not None)
+
+
+async def _live_fuel_place(place_id: int, include_prices: bool) -> PlaceRead:
+    """A fuel station read from whereq.cloud, as this app's place shape."""
+    import asyncio
+
+    from app.services.cloud_fuel import fetch_station
+
+    try:
+        payload = await asyncio.to_thread(fetch_station, station_id=-place_id)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("cloud fuel: the station could not be read — %s", exc)
+        raise HTTPException(status_code=502, detail="Fuel station is unavailable") from exc
+
+    station = (payload or {}).get("station") or (payload or {}).get("data") or {}
+    if not station:
+        raise HTTPException(status_code=404, detail="Place not found")
+
+    country = (station.get("country") or "").upper() or None
+    prices = station.get("prices") or {}
+    stamps = [p.get("observed_at") for p in prices.values()
+              if isinstance(p, dict) and p.get("observed_at")]
+    meta: dict = {
+        "brand": station.get("brand"),
+        "state": station.get("state"),
+        "state_iso": station.get("state_iso"),
+        "municipality": station.get("municipality"),
+        "prices": prices,
+        "observed_at": max(stamps) if stamps else None,
+        "currency": CURRENCY_BY_COUNTRY.get(country),
+        "unit": UNIT_BY_COUNTRY.get(country),
+        "data_source": station.get("source"),
+        "station_id": station.get("id"),
+    }
+    if not include_prices:
+        meta = _without_prices(meta)
+
+    return PlaceRead(
+        id=place_id,
+        name=(station.get("name") or station.get("brand") or "Fuel station")[:255],
+        description=None,
+        address=None,
+        city=station.get("municipality"),
+        country=country,
+        latitude=station.get("lat"),
+        longitude=station.get("lon"),
+        category=FUEL_CATEGORY,
+        kind="poi",
+        sub=station.get("brand"),
+        metadata_json=meta,
+        view_count=0,
+        created_at=datetime.now(timezone.utc),
+    )
 
 
 @router.post("", response_model=PlaceRead, status_code=201)
@@ -231,7 +438,7 @@ async def create_place(
     place = Place(**data.model_dump())
     place.user_id = principal.id
     # A user-created place is never a pipeline-managed row: `source` drives
-    # the ownership rules and the crawlers key their own rows on
+    # the ownership rules and the ingesters key their own rows on
     # (source, external_id).
     place.source = "manual"
     place.geom = func.ST_SetSRID(func.ST_MakePoint(data.longitude, data.latitude), 4326)

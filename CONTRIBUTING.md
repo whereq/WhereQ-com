@@ -109,11 +109,11 @@ two disagree, the migrations win.
 **An upstream the crawler pulls from** (a feed of places, prices, outlines or
 articles):
 
-1. Put it in `backend/app/crawler/upstream/`, one module per upstream.
+1. Put it in `backend/app/services/`, one module per upstream — named
+   `cloud_*` when it reads whereq.cloud live.
 2. Wire it into the scheduler in `backend/app/crawler/scheduler.py`, so it
    gets the same due-ness and retry handling as the others.
-3. Give it a one-shot command in `backend/app/crawler/cli/`, so it can be run
-   by hand.
+3. Give it a one-shot command in `backend/app/`, so it can be run by hand.
 4. Upsert by `(source, external_id)`, so a re-run converges instead of
    duplicating.
 

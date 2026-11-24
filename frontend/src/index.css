@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /* ─────────────────────────────────────────────────────────────────
-   whereq.com — Metro/calendar.cc-inspired design system
+   whereq.com — a Metro-inspired design system
    ───────────────────────────────────────────────────────────────── */
 
 :root {
@@ -1646,6 +1646,35 @@ button { font-family: inherit; color: inherit; }
   cursor: pointer; font-size: 15px; line-height: 1; padding: 0 2px;
 }
 .side-search-x:hover { color: var(--text); }
+
+/* ─────────── sidebar search — now the shared @whereq/react SearchBox ───────────
+ *
+ * The box itself (field, dropdown, keyboard navigation, the ARIA wiring) is
+ * the library's component, themed with the tokens above. What stays here is
+ * whereq.com's own result row: a coloured dot, the name and the context, on
+ * one line — the same row the old `.side-suggest-item` was.
+ */
+.side-search .wq-search__option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+}
+.side-search .wq-search__list {
+  max-height: 320px;
+}
+/* The name takes the room, the context stays on the right. */
+.side-search .wq-search__option .side-suggest-name { flex: 1; }
+.side-search .wq-search__option .side-suggest-meta {
+  flex-shrink: 0; max-width: 45%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.side-search .wq-search__status {
+  padding: 14px 12px;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
 
 /* ─────────── nearby — everything around the map centre ─────────── */
 .nearby-section {

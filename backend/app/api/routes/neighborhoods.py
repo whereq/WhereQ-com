@@ -27,7 +27,7 @@ async def neighborhood_insights(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Walk / Transit / Bike / Greenery scores for a point, computed from our own
-    crawled POIs (PostGIS distance), not an external API."""
+    ingested POIs (PostGIS distance), not an external API."""
     pt = func.ST_SetSRID(func.ST_MakePoint(lng, lat), 4326)
 
     async def _count(conds: list, radius_m: int) -> int:

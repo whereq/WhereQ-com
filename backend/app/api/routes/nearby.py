@@ -26,6 +26,7 @@ partitions by category (a window function keeps the nearest of each and
 counts each) and the list is interleaved across the categories.
 """
 
+import logging
 import math
 
 from fastapi import APIRouter, Depends, Query
@@ -42,12 +43,19 @@ from app.models.place import Place
 from app.models.school import School
 from app.models.user import User
 from app.schemas.nearby import NearbyCenter, NearbyItem, NearbyResponse
-from app.services.place_dedup import DEDUP_EXPAND_DEG, shadowed_stations
+from app.services.fuel_stations import CURRENCY_BY_COUNTRY, FUEL_SOURCE
+from app.services.place_dedup import (
+    DEDUP_EXPAND_DEG,
+    shadowed_by_stations,
+    shadowed_stations,
+)
 from app.services.place_taxonomy import (
     PLACE_KIND_CATEGORIES,
     PLACE_POI_CATEGORIES,
     expand_categories,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/nearby", tags=["nearby"])
 
@@ -163,7 +171,7 @@ def _price_fields(meta: dict, include_prices: bool) -> tuple[float | None, str |
     return product.get("price"), meta.get("currency"), meta.get("observed_at")
 
 
-def _places_stmt(lat, lng, radius_m, cats, per_category):
+def _places_stmt(lat, lng, radius_m, cats, per_category, shadowed=None):
     """The statement behind the places half of the nearby list.
 
     The window functions do two jobs at once: ``row_number`` over the category
@@ -171,6 +179,10 @@ def _places_stmt(lat, lng, radius_m, cats, per_category):
     happens not to contain is not lost behind a nearer one), and ``count``
     over the same partition gives the true number of that category nearby —
     a badge the truncated list could never supply.
+
+    ``shadowed`` is the set of OSM fuel rows that a **live** station covers.
+    When the stations are read from whereq.cloud they are not in this app's
+    database, so the join cannot find them and the set is passed in.
     """
     point = func.ST_SetSRID(func.ST_MakePoint(lng, lat), 4326)
     distance = func.ST_DistanceSphere(Place.geom, point).label("distance_m")
@@ -183,13 +195,20 @@ def _places_stmt(lat, lng, radius_m, cats, per_category):
     conds += _place_conditions(cats)
 
     if "fuel" in cats:
-        # The OSM row of a station that whereq.cloud already covers is dropped,
-        # so a station is listed once — the priced row wins.
-        min_lng, min_lat, max_lng, max_lat = _bbox(lat, lng, radius_m / 1000.0)
-        envelope = func.ST_MakeEnvelope(
-            min_lng - DEDUP_EXPAND_DEG, min_lat - DEDUP_EXPAND_DEG,
-            max_lng + DEDUP_EXPAND_DEG, max_lat + DEDUP_EXPAND_DEG, 4326)
-        conds.append(Place.id.not_in(shadowed_stations(envelope)))
+        if shadowed:
+            conds.append(Place.id.not_in(shadowed))
+        else:
+            # The OSM row of a station that whereq.cloud already covers is
+            # dropped, so a station is listed once — the priced row wins.
+            min_lng, min_lat, max_lng, max_lat = _bbox(lat, lng, radius_m / 1000.0)
+            envelope = func.ST_MakeEnvelope(
+                min_lng - DEDUP_EXPAND_DEG, min_lat - DEDUP_EXPAND_DEG,
+                max_lng + DEDUP_EXPAND_DEG, max_lat + DEDUP_EXPAND_DEG, 4326)
+            conds.append(Place.id.not_in(shadowed_stations(envelope)))
+        # The mirrored stations are not read at all when the fuel rows are
+        # live — the live answer carries them.
+        if _live_fuel():
+            conds.append(Place.source != FUEL_SOURCE)
 
     inner = select(
         Place.id.label("id"),
@@ -219,8 +238,24 @@ async def _nearby_places(db, lat, lng, radius_m, cats, per_category, include_pri
 
     Returns ``(buckets, counts)``: the nearest items of each category, and the
     true number of that category nearby.
+
+    **The fuel rows may come from whereq.cloud.** When ``FUEL_READ_MODE`` is
+    ``cloud`` the priced stations are read from the platform and merged into
+    the ``fuel`` bucket; the mirrored rows are not read at all.
     """
-    rows = (await db.execute(_places_stmt(lat, lng, radius_m, cats, per_category))).all()
+    live_stations: list[dict] = []
+    live_count = 0
+    if "fuel" in cats and _live_fuel():
+        live_stations, live_count = await _live_fuel_stations(
+            lat, lng, radius_m, per_category)
+        shadowed = await shadowed_by_stations(
+            db, [(s["lon"], s["lat"]) for s in live_stations])
+    else:
+        shadowed = set()
+
+    rows = (await db.execute(
+        _places_stmt(lat, lng, radius_m, cats, per_category, shadowed)
+    )).all()
     buckets: dict[str, list[NearbyItem]] = {}
     counts: dict[str, int] = {}
     for r in rows:
@@ -241,7 +276,108 @@ async def _nearby_places(db, lat, lng, radius_m, cats, per_category, include_pri
         )
         buckets.setdefault(r.cat, []).append(item)
         counts[r.cat] = int(r.cat_count)
+
+    if live_stations:
+        items, _ = _live_fuel_items(live_stations, include_prices)
+        bucket = buckets.setdefault("fuel", [])
+        bucket.extend(items)
+        # The bucket now holds two sources — the OSM rows that no live station
+        # shadows and the live stations themselves — and the live ones are the
+        # nearest: the OSM rows within 150 m of a station were dropped as
+        # shadows, so what is left of them starts kilometres away. Appending
+        # without re-sorting would put those kilometres first and the station
+        # at 685 m behind them.
+        bucket.sort(key=lambda i: i.distance_m or 0)
+        # The count is the **union**: the live stations plus the OSM rows that
+        # no station shadows. The two do not overlap — the shadowing removed
+        # the OSM twin of every live station — so they add up.
+        counts["fuel"] = counts.get("fuel", 0) + live_count
+
     return buckets, counts
+
+
+def _live_fuel() -> bool:
+    """Whether the fuel stations are read from whereq.cloud rather than here."""
+    return (settings.FUEL_READ_MODE or "local").strip().lower() == "cloud"
+
+
+async def _live_fuel_stations(lat: float, lng: float, radius_m: int,
+                              per_category: int) -> tuple[list[dict], int]:
+    """The priced stations within a radius, read from whereq.cloud.
+
+    The upstream filters by a box and by name, not by radius, so the box is
+    what the radius describes and the distance test is applied here.
+
+    The box is read page by page: the upstream orders the rows by its own
+    station id, so a single page is an arbitrary slice of the area and the
+    nearest station of that slice is not the nearest one.
+
+    Returns the nearest ``per_category`` stations **and the true number of
+    stations within the radius** — the badge on the chip counts the stations
+    nearby, not the ones the list had room for.
+    """
+    import asyncio
+
+    from app.services.cloud_fuel import fetch_stations_paged
+
+    radius_km = radius_m / 1000.0
+    min_lng, min_lat, max_lng, max_lat = _bbox(lat, lng, radius_km)
+    box = f"{min_lng},{min_lat},{max_lng},{max_lat}"
+    try:
+        payload = await asyncio.to_thread(fetch_stations_paged, bbox=box)
+    except Exception as exc:  # noqa: BLE001 — the upstream may fail in any way
+        logger.warning("cloud fuel: the nearby stations could not be read — %s", exc)
+        return [], 0
+
+    stations = []
+    for station in payload.get("stations") or []:
+        slat, slng = station.get("lat"), station.get("lon")
+        if slat is None or slng is None:
+            continue
+        distance = _haversine_m(lat, lng, slat, slng)
+        if distance > radius_m:
+            continue
+        stations.append({**station, "distance_m": distance})
+    stations.sort(key=lambda s: s["distance_m"])
+    return stations[:per_category], len(stations)
+
+
+def _live_fuel_items(stations: list[dict], include_prices: bool
+                     ) -> tuple[list[NearbyItem], int]:
+    """The live stations as nearby items.
+
+    The item id is ``place--<station id>``: the negative of the upstream's
+    station id, which is how the map's fuel pins are identified. The frontend
+    parses the number out of the id and opens the card with it, and a negative
+    id is what tells the card to read the station live.
+    """
+    items: list[NearbyItem] = []
+    for station in stations:
+        country = (station.get("country") or "").upper() or None
+        prices = station.get("prices") or {}
+        stamps = [p.get("observed_at") for p in prices.values()
+                  if isinstance(p, dict) and p.get("observed_at")]
+        price = currency = observed_at = None
+        if include_prices:
+            product = (prices.get(_PRICE_PRODUCT) or {})
+            price = product.get("price")
+            currency = CURRENCY_BY_COUNTRY.get(country)
+            observed_at = max(stamps) if stamps else None
+        items.append(NearbyItem(
+            id=f"place--{station.get('id')}",
+            type="place",
+            category="fuel",
+            subcategory=station.get("brand"),
+            name=(station.get("name") or station.get("brand") or "Fuel station"),
+            meta=station.get("municipality") or station.get("brand"),
+            lat=station.get("lat"),
+            lng=station.get("lon"),
+            distance_m=int(round(station.get("distance_m") or 0)),
+            price=price,
+            currency=currency,
+            observed_at=observed_at,
+        ))
+    return items, len(stations)
 
 
 async def _nearby_local_content(db, lat, lng, radius_m, cats, limit):
@@ -325,7 +461,9 @@ async def _nearby_schools(db, lat, lng, radius_m, cats, limit):
 
     ``school`` has plain ``lat``/``lng`` columns and no geometry, so the
     radius is a numeric bounding box followed by an exact great-circle
-    distance here. The count is exact for the same reason.
+    distance here. The distance is exact; the **count** is not — the SQL
+    candidate list is capped at ``PER_SOURCE_LIMIT`` (200) rows, so a bbox
+    holding more schools than that reports the cap, not the true number.
     """
     if "school" not in cats:
         return [], 0

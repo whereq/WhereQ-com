@@ -86,15 +86,31 @@ services:
       # whereq.cloud data feeds (fuel stations + prices). The key is used
       # server-side only — it is never built into the frontend bundle.
       WHEREQ_CLOUD_API_KEY: ${WHEREQ_CLOUD_API_KEY:-}
-      FUEL_CRAWL_ENABLED: ${FUEL_CRAWL_ENABLED:-true}
-      FUEL_CRAWL_TARGETS: ${FUEL_CRAWL_TARGETS:-CA,US}
-      FUEL_CRAWL_TARGETS_PER_TICK: ${FUEL_CRAWL_TARGETS_PER_TICK:-1}
-      FUEL_CRAWL_CHECK_SECONDS: ${FUEL_CRAWL_CHECK_SECONDS:-3600}
-      FUEL_CRAWL_INTERVAL_HOURS: ${FUEL_CRAWL_INTERVAL_HOURS:-6}
-      FUEL_CRAWL_PAGE_SIZE: ${FUEL_CRAWL_PAGE_SIZE:-500}
-      FUEL_CRAWL_MAX_STATIONS: ${FUEL_CRAWL_MAX_STATIONS:-60000}
-      FUEL_CRAWL_MIN_INTERVAL: ${FUEL_CRAWL_MIN_INTERVAL:-2.2}
-      FUEL_CRAWL_MAX_RETRIES: ${FUEL_CRAWL_MAX_RETRIES:-5}
+      # The key's own rate limit. whereq.cloud enforces a sliding 60-second
+      # window per key; the free tier is 30 requests/minute.
+      WHEREQ_CLOUD_RATE_LIMIT_PER_MIN: ${WHEREQ_CLOUD_RATE_LIMIT_PER_MIN:-30}
+      # Which copy of each feed this API reads: local | dual | cloud.
+      # "cloud" reads whereq.cloud directly — the default, because the
+      # platform collects the data and a second copy here would go stale.
+      CLOUD_READ_MODE: ${CLOUD_READ_MODE:-cloud}
+      # The outlines are served in bulk, so they have their own switch.
+      # Empty means "follow CLOUD_READ_MODE".
+      GEO_BOUNDARIES_READ_MODE: ${GEO_BOUNDARIES_READ_MODE:-}
+      SCHOOL_READ_MODE: ${SCHOOL_READ_MODE:-cloud}
+      FUEL_READ_MODE: ${FUEL_READ_MODE:-cloud}
+      # The mirrors are off: the reads above go to whereq.cloud.
+      FUEL_MIRROR_ENABLED: ${FUEL_MIRROR_ENABLED:-false}
+      GEO_INGEST_ENABLED: ${GEO_INGEST_ENABLED:-false}
+      LEGACY_COLLECTORS_ENABLED: ${LEGACY_COLLECTORS_ENABLED:-false}
+      FUEL_INGEST_ENABLED: ${FUEL_INGEST_ENABLED:-true}
+      FUEL_INGEST_TARGETS: ${FUEL_INGEST_TARGETS:-CA,US}
+      FUEL_INGEST_TARGETS_PER_TICK: ${FUEL_INGEST_TARGETS_PER_TICK:-1}
+      FUEL_INGEST_CHECK_SECONDS: ${FUEL_INGEST_CHECK_SECONDS:-3600}
+      FUEL_INGEST_INTERVAL_HOURS: ${FUEL_INGEST_INTERVAL_HOURS:-6}
+      FUEL_INGEST_PAGE_SIZE: ${FUEL_INGEST_PAGE_SIZE:-500}
+      FUEL_INGEST_MAX_STATIONS: ${FUEL_INGEST_MAX_STATIONS:-60000}
+      FUEL_INGEST_MIN_INTERVAL: ${FUEL_INGEST_MIN_INTERVAL:-2.2}
+      FUEL_INGEST_MAX_RETRIES: ${FUEL_INGEST_MAX_RETRIES:-5}
       FUEL_PRICES_ENABLED: ${FUEL_PRICES_ENABLED:-true}
       FUEL_PRICES_REGIONS: ${FUEL_PRICES_REGIONS:-ca,us}
       FUEL_PRICES_INTERVAL_HOURS: ${FUEL_PRICES_INTERVAL_HOURS:-24}
@@ -120,10 +136,14 @@ services:
       retries: 3
 
   # ---------------------------------------------------------------------------
-  # Crawler — the app's retrieval layer. Reuses the API image and runs the
-  # self-contained scheduler loop instead of uvicorn: it crawls whereq.cloud
-  # (fuel stations, prices, administrative geography), OpenStreetMap (the POI
-  # layer) and the RSS/JSON content feeds. No host cron needed.
+  # Consumer — the app's retrieval layer. Reuses the API image and runs the
+  # self-contained scheduler loop instead of uvicorn: it reads whereq.cloud
+  # (the news feed, the POI catalogue and, with the mirrors turned on, the
+  # fuel stations, prices and administrative geography) and keeps the local
+  # tables in step. No host cron needed.
+  #
+  # It is still called `crawler` so the commands in docs/SETUP.md keep
+  # working; what it does now is consume.
   # ---------------------------------------------------------------------------
   crawler:
     image: whereq-com-api:latest
@@ -136,35 +156,50 @@ services:
       GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
       GOOGLE_MAPS_SERVER_KEY: ${GOOGLE_MAPS_SERVER_KEY:-}
       WHEREQ_CLOUD_API_KEY: ${WHEREQ_CLOUD_API_KEY:-}
-      FUEL_CRAWL_ENABLED: ${FUEL_CRAWL_ENABLED:-true}
-      FUEL_CRAWL_TARGETS: ${FUEL_CRAWL_TARGETS:-CA,US}
-      FUEL_CRAWL_TARGETS_PER_TICK: ${FUEL_CRAWL_TARGETS_PER_TICK:-1}
-      FUEL_CRAWL_CHECK_SECONDS: ${FUEL_CRAWL_CHECK_SECONDS:-3600}
-      FUEL_CRAWL_INTERVAL_HOURS: ${FUEL_CRAWL_INTERVAL_HOURS:-6}
-      FUEL_CRAWL_PAGE_SIZE: ${FUEL_CRAWL_PAGE_SIZE:-500}
-      FUEL_CRAWL_MAX_STATIONS: ${FUEL_CRAWL_MAX_STATIONS:-60000}
-      FUEL_CRAWL_MIN_INTERVAL: ${FUEL_CRAWL_MIN_INTERVAL:-2.2}
-      FUEL_CRAWL_MAX_RETRIES: ${FUEL_CRAWL_MAX_RETRIES:-5}
+      WHEREQ_CLOUD_RATE_LIMIT_PER_MIN: ${WHEREQ_CLOUD_RATE_LIMIT_PER_MIN:-30}
+      FUEL_INGEST_ENABLED: ${FUEL_INGEST_ENABLED:-true}
+      FUEL_INGEST_TARGETS: ${FUEL_INGEST_TARGETS:-CA,US}
+      FUEL_INGEST_TARGETS_PER_TICK: ${FUEL_INGEST_TARGETS_PER_TICK:-1}
+      FUEL_INGEST_CHECK_SECONDS: ${FUEL_INGEST_CHECK_SECONDS:-3600}
+      FUEL_INGEST_INTERVAL_HOURS: ${FUEL_INGEST_INTERVAL_HOURS:-6}
+      FUEL_INGEST_PAGE_SIZE: ${FUEL_INGEST_PAGE_SIZE:-500}
+      FUEL_INGEST_MAX_STATIONS: ${FUEL_INGEST_MAX_STATIONS:-60000}
+      FUEL_INGEST_MIN_INTERVAL: ${FUEL_INGEST_MIN_INTERVAL:-2.2}
+      FUEL_INGEST_MAX_RETRIES: ${FUEL_INGEST_MAX_RETRIES:-5}
       FUEL_PRICES_ENABLED: ${FUEL_PRICES_ENABLED:-true}
       FUEL_PRICES_REGIONS: ${FUEL_PRICES_REGIONS:-ca,us}
       FUEL_PRICES_INTERVAL_HOURS: ${FUEL_PRICES_INTERVAL_HOURS:-24}
       FUEL_PRICES_CHECK_SECONDS: ${FUEL_PRICES_CHECK_SECONDS:-3600}
       # Administrative geography (whereq.cloud) — the areas that contain the
       # places on the map, with their outlines.
-      GEO_CRAWL_ENABLED: ${GEO_CRAWL_ENABLED:-true}
-      GEO_CRAWL_TARGETS: ${GEO_CRAWL_TARGETS:-bbox:-80.3,43.6,-79.2,44.2}
-      GEO_CRAWL_TARGETS_PER_TICK: ${GEO_CRAWL_TARGETS_PER_TICK:-1}
-      GEO_CRAWL_CHECK_SECONDS: ${GEO_CRAWL_CHECK_SECONDS:-21600}
-      GEO_CRAWL_INTERVAL_HOURS: ${GEO_CRAWL_INTERVAL_HOURS:-168}
-      GEO_CRAWL_PAGE_SIZE: ${GEO_CRAWL_PAGE_SIZE:-200}
-      GEO_CRAWL_MAX_PLACES: ${GEO_CRAWL_MAX_PLACES:-5000}
-      GEO_CRAWL_FETCH_BOUNDARIES: ${GEO_CRAWL_FETCH_BOUNDARIES:-true}
-      GEO_CRAWL_MIN_INTERVAL: ${GEO_CRAWL_MIN_INTERVAL:-2.2}
-      GEO_CRAWL_MAX_RETRIES: ${GEO_CRAWL_MAX_RETRIES:-5}
-      # OpenStreetMap POIs (Overpass)
-      POI_CRAWL_ENABLED: ${POI_CRAWL_ENABLED:-true}
-      POI_CRAWL_CHECK_SECONDS: ${POI_CRAWL_CHECK_SECONDS:-86400}
-      POI_CRAWL_INTERVAL_DAYS: ${POI_CRAWL_INTERVAL_DAYS:-7}
+      GEO_INGEST_ENABLED: ${GEO_INGEST_ENABLED:-false}
+      GEO_INGEST_TARGETS: ${GEO_INGEST_TARGETS:-bbox:-80.3,43.6,-79.2,44.2}
+      GEO_INGEST_TARGETS_PER_TICK: ${GEO_INGEST_TARGETS_PER_TICK:-1}
+      GEO_INGEST_CHECK_SECONDS: ${GEO_INGEST_CHECK_SECONDS:-21600}
+      GEO_INGEST_INTERVAL_HOURS: ${GEO_INGEST_INTERVAL_HOURS:-168}
+      GEO_INGEST_PAGE_SIZE: ${GEO_INGEST_PAGE_SIZE:-200}
+      GEO_INGEST_MAX_PLACES: ${GEO_INGEST_MAX_PLACES:-5000}
+      GEO_INGEST_FETCH_BOUNDARIES: ${GEO_INGEST_FETCH_BOUNDARIES:-true}
+      GEO_INGEST_MIN_INTERVAL: ${GEO_INGEST_MIN_INTERVAL:-2.2}
+      GEO_INGEST_MAX_RETRIES: ${GEO_INGEST_MAX_RETRIES:-5}
+      GEO_BOUNDARY_SIMPLIFY_M: ${GEO_BOUNDARY_SIMPLIFY_M:-50.0}
+      # OpenStreetMap POIs (Overpass) — the legacy sweep. whereq.cloud's own
+      # sweep provides the POI catalogue, so it is off unless the rollback
+      # lever below is turned.
+      POI_INGEST_ENABLED: ${POI_INGEST_ENABLED:-true}
+      POI_INGEST_CHECK_SECONDS: ${POI_INGEST_CHECK_SECONDS:-86400}
+      POI_INGEST_INTERVAL_DAYS: ${POI_INGEST_INTERVAL_DAYS:-7}
+      LEGACY_COLLECTORS_ENABLED: ${LEGACY_COLLECTORS_ENABLED:-false}
+      # The local layer — whereq.cloud collects it and this container reads it
+      # back: the news feed at the head, the POI catalogue whole.
+      LOCAL_CONTENT_SYNC_ENABLED: ${LOCAL_CONTENT_SYNC_ENABLED:-true}
+      LOCAL_CONTENT_SYNC_CHECK_SECONDS: ${LOCAL_CONTENT_SYNC_CHECK_SECONDS:-300}
+      LOCAL_CONTENT_SYNC_PAGES: ${LOCAL_CONTENT_SYNC_PAGES:-5}
+      LOCAL_CONTENT_SYNC_PAGE_SIZE: ${LOCAL_CONTENT_SYNC_PAGE_SIZE:-100}
+      LOCAL_PLACES_SYNC_ENABLED: ${LOCAL_PLACES_SYNC_ENABLED:-true}
+      LOCAL_PLACES_SYNC_CHECK_SECONDS: ${LOCAL_PLACES_SYNC_CHECK_SECONDS:-3600}
+      LOCAL_PLACES_SYNC_INTERVAL_HOURS: ${LOCAL_PLACES_SYNC_INTERVAL_HOURS:-168}
+      LOCAL_PLACES_SYNC_MAX_ROWS: ${LOCAL_PLACES_SYNC_MAX_ROWS:-100000}
       # Geocoding — free tiers first, Google last
       GEOCODE_PROVIDER_ORDER: ${GEOCODE_PROVIDER_ORDER:-geocode_maps_co,locationiq,geocodio,nominatim,google}
       GEOCODE_REGION_BIAS: ${GEOCODE_REGION_BIAS:-ca}

@@ -6,7 +6,14 @@ from pydantic import BaseModel
 
 
 class BoardOut(BaseModel):
-    id: int
+    """A school board.
+
+    The key is the **slug** — ``ycdsb``, ``tdsb`` — not an integer id. The
+    integer was a row id in this app's own database, and whereq.cloud's
+    boards have no such thing: their slug is the key, and it is the same
+    slug on both sides.
+    """
+
     slug: str
     name: str
     type: str | None = None
@@ -16,7 +23,15 @@ class BoardOut(BaseModel):
 
 
 class SchoolSummary(BaseModel):
-    id: int
+    """One school.
+
+    The identifier is the **uid** — ``ycdsb/0158`` — not an integer row id.
+    The uid is the key whereq.cloud and this app agree on, it is what
+    whereq.cloud's own routes take, and it does not change when the dataset
+    is reloaded. The integer id was a row id in this app's own database.
+    """
+
+    uid: str
     name: str
     type: str | None = None
     province: str | None = None        # province code, e.g. "ON"
@@ -82,7 +97,7 @@ class SchoolDetail(SchoolSummary):
 
 
 class MapPin(BaseModel):
-    id: int
+    uid: str
     name: str
     lat: float
     lng: float
@@ -98,7 +113,7 @@ class SchoolBoundaryOut(BaseModel):
     A school has several polygons (a catchment can be split in two), so the
     geometry is a **MultiPolygon** — the same shape the schools app draws.
     """
-    school_id: int
+    school_uid: str
     name: str
     geometry: dict | None = None      # GeoJSON MultiPolygon
     polygon_count: int = 0
@@ -106,7 +121,7 @@ class SchoolBoundaryOut(BaseModel):
 
 
 class CatchmentHit(BaseModel):
-    id: int
+    uid: str
     name: str
     type: str | None = None
     board: str | None = None

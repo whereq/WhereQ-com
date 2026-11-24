@@ -24,7 +24,7 @@ export interface GeoBoundaryList {
  *
  * Public read-only endpoints — the data is open (ODbL 1.0 / CC-BY 4.0) and
  * the attribution travels on every row. Nothing here spends upstream quota:
- * the rows are already crawled from whereq.cloud into the database.
+ * the rows are already synced from whereq.cloud into the database.
  */
 export const geoApi = {
   /** The vocabulary: every kind of administrative place, with our counts. */

@@ -53,29 +53,29 @@ works normally.
 cd backend
 
 # Fuel stations — every configured target
-.venv/bin/python -m app.crawler.cli.fuel
+.venv/bin/python -m app.fuel_ingest
 
 # One target at a time
-.venv/bin/python -m app.crawler.cli.fuel --target "CA:Ontario:Toronto"
-.venv/bin/python -m app.crawler.cli.fuel --bbox -79.64,43.58,-79.12,43.86
+.venv/bin/python -m app.fuel_ingest --target "CA:Ontario:Toronto"
+.venv/bin/python -m app.fuel_ingest --target "bbox:-79.64,43.58,-79.12,43.86"
 
 # The aggregated price series
-.venv/bin/python -m app.crawler.cli.fuel --prices
+.venv/bin/python -m app.fuel_ingest --prices
 
 # The public preview feed, explicitly
-.venv/bin/python -m app.crawler.cli.fuel --allow-demo
+.venv/bin/python -m app.fuel_ingest --allow-demo
 
 # Administrative geography
-.venv/bin/python -m app.crawler.cli.geo
-.venv/bin/python -m app.crawler.cli.geo --target "kind:ward"
-.venv/bin/python -m app.crawler.cli.geo --boundaries   # also fetch the outlines
+.venv/bin/python -m app.geo_ingest
+.venv/bin/python -m app.geo_ingest --target "kind:ward"
+.venv/bin/python -m app.geo_ingest --boundaries   # also fetch the outlines
 ```
 
 The crawl is idempotent — it upserts by `(source, external_id)`, so running it
 twice is safe.
 
-The targets are configured in `backend/.env` (see `FUEL_CRAWL_TARGETS` and
-`GEO_CRAWL_TARGETS`). The crawler visits them round-robin, one target per
+The targets are configured in `backend/.env` (see `FUEL_INGEST_TARGETS` and
+`GEO_INGEST_TARGETS`). The crawler visits them round-robin, one target per
 tick, because the API allows 30 requests per minute per key and being faster
 than the limit only earns a 429.
 
@@ -114,9 +114,9 @@ coffee, pharmacy, and the rest.
 
 ```bash
 cd backend
-.venv/bin/python -m app.crawler.cli.places
-.venv/bin/python -m app.crawler.cli.places --only food,coffee,pharmacy
-.venv/bin/python -m app.crawler.cli.places --bbox -79.64,43.58,-79.12,43.86
+.venv/bin/python -m app.places_ingest
+.venv/bin/python -m app.places_ingest --only food,coffee,pharmacy
+.venv/bin/python -m app.places_ingest --bbox -79.64,43.58,-79.12,43.86
 ```
 
 ---

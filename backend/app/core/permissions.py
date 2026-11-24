@@ -7,8 +7,8 @@ Two kinds of content need different treatment:
 
 * **User content** (``places.source == 'manual'``, neighborhoods, routes) is
   owned by whoever created it.
-* **Managed content** (places crawled from OSM or whereq.cloud) is shared
-  reference data that a crawl pipeline refreshes on its own schedule. A
+* **Managed content** (places ingested from OSM or whereq.cloud) is shared
+  reference data that an ingestion pipeline refreshes on its own schedule. A
   user edit would be silently overwritten on the next run, so only staff may
   modify it.
 
@@ -26,7 +26,7 @@ from fastapi import HTTPException
 
 from app.core.security import Principal
 
-#: Place sources that are refreshed by the automatic crawl. Rows
+#: Place sources that are refreshed by an automatic ingestion pipeline. Rows
 #: with these sources are reference data, not user content.
 MANAGED_PLACE_SOURCES = frozenset({"osm", "whereq_cloud"})
 

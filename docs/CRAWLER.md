@@ -29,6 +29,15 @@ The **whereq.cloud** feed is the one that is metered. Everything else is open
 data. See [DATA_SOURCES.md](DATA_SOURCES.md) for the licences and the
 attribution each one requires.
 
+**The fuel and geography mirrors are off by default.** This installation
+reads those two from whereq.cloud live (`FUEL_READ_MODE=cloud`,
+`CLOUD_READ_MODE=cloud`), so a second copy held here would be the copy that
+goes stale. The mirrors are the **rollback**: `FUEL_MIRROR_ENABLED=true` and
+`GEO_INGEST_ENABLED=true` bring them back. The POI layer and the content
+feeds are mirrored by default — they are the local layer the app serves
+directly. See
+[whereq-cloud-migration.md](whereq-cloud-migration.md) for the switches.
+
 ---
 
 ## The key never leaves the server
@@ -42,8 +51,8 @@ Without a key, the whereq.cloud endpoints answer with a 100-row preview of the
 oldest rows. The crawler **refuses** that preview unless you ask for it
 explicitly (`--allow-demo`), because a demo page is not a map.
 
-The API allows **30 requests/minute** per key. Both whereq.cloud crawls share
-one throttle (`app/crawler/upstream/whereq_cloud.py`) — two independent ones
+The API allows **30 requests/minute** per key. Every whereq.cloud read shares
+one throttle (`app/services/whereq_cloud_client.py`) — two independent ones
 would each allow 30/min and would 429 each other.
 
 ---
@@ -64,23 +73,23 @@ Locally, from `backend/`:
 .venv/bin/python -m app.crawler.scheduler
 ```
 
-One crawl, by hand:
+One ingest pass, by hand:
 
 ```bash
-.venv/bin/python -m app.crawler.cli.fuel      # whereq.cloud fuel stations
-.venv/bin/python -m app.crawler.cli.fuel --prices
-.venv/bin/python -m app.crawler.cli.geo       # whereq.cloud geography
-.venv/bin/python -m app.crawler.cli.places    # OpenStreetMap POIs
-.venv/bin/python -m app.crawler.run           # one content crawl
+.venv/bin/python -m app.fuel_ingest        # whereq.cloud fuel stations
+.venv/bin/python -m app.fuel_ingest --prices
+.venv/bin/python -m app.geo_ingest         # whereq.cloud geography
+.venv/bin/python -m app.places_ingest       # OpenStreetMap POIs
+.venv/bin/python -m app.crawler.run         # one content crawl
 ```
 
 ---
 
 ## Coverage targets
 
-The whereq.cloud crawls do not pull a whole continent in one go. Coverage is
+The whereq.cloud ingests do not pull a whole continent in one go. Coverage is
 expressed as **targets**, and the scheduler rotates through the targets that
-are due — one (or `*_CRAWL_TARGETS_PER_TICK`) per tick — so the upstream is
+are due — one (or `*_INGEST_TARGETS_PER_TICK`) per tick — so the upstream is
 never asked for everything at once.
 
 **Fuel** — a country, a state/province, a city, or a map viewport:
@@ -105,13 +114,13 @@ The defaults live in `backend/.env.example`:
 
 | Setting | Default | Notes |
 |---|---|---|
-| `FUEL_CRAWL_TARGETS` | `CA,US` | The fuel coverage. |
-| `FUEL_CRAWL_TARGETS_PER_TICK` | `1` | Targets crawled per tick. |
-| `FUEL_CRAWL_INTERVAL_HOURS` | `6` | How often a target is re-crawled. |
-| `GEO_CRAWL_TARGETS` | `bbox:-80.3,43.6,-79.2,44.2` | The geography coverage. |
-| `GEO_CRAWL_TARGETS_PER_TICK` | `1` | Targets crawled per tick. |
-| `GEO_CRAWL_INTERVAL_HOURS` | `168` | How often a target is re-crawled. |
-| `POI_CRAWL_INTERVAL_DAYS` | `7` | How often the OSM POIs are re-crawled. |
+| `FUEL_INGEST_TARGETS` | `CA,US` | The fuel coverage. |
+| `FUEL_INGEST_TARGETS_PER_TICK` | `1` | Targets ingested per tick. |
+| `FUEL_INGEST_INTERVAL_HOURS` | `6` | How often a target is re-ingested. |
+| `GEO_INGEST_TARGETS` | `bbox:-80.3,43.6,-79.2,44.2` | The geography coverage. |
+| `GEO_INGEST_TARGETS_PER_TICK` | `1` | Targets ingested per tick. |
+| `GEO_INGEST_INTERVAL_HOURS` | `168` | How often a target is re-ingested. |
+| `POI_INGEST_INTERVAL_DAYS` | `7` | How often the OSM POIs are re-ingested. |
 
 Due-ness is tracked per target in `fuel_sync_state` and `geo_sync_state`, so a
 target that failed is retried on the next tick instead of waiting out its
@@ -187,9 +196,15 @@ later by the re-geocode pass:
 | `app/crawler/base.py` | the `BaseSource` / `RawItem` contract |
 | `app/crawler/sources/__init__.py` | the source registry |
 | `app/crawler/seed_sources.py` | the default source set |
-| `app/crawler/upstream/whereq_cloud.py` | the shared client, throttle and retry policy |
-| `app/crawler/upstream/fuel_stations.py` | the whereq.cloud fuel crawl |
-| `app/crawler/upstream/fuel_prices.py` | the whereq.cloud price-series crawl |
-| `app/crawler/upstream/geo_places.py` | the whereq.cloud geography crawl |
-| `app/crawler/upstream/osm_places.py` | the OpenStreetMap POI crawl |
-| `app/crawler/cli/` | the one-shot crawl commands |
+| `app/services/whereq_cloud_client.py` | the shared client, throttle and retry policy |
+| `app/services/cloud_fuel.py` | the live fuel read — stations and price series |
+| `app/services/cloud_geo.py` | the live geography read, and the bulk outlines |
+| `app/services/cloud_schools.py` | the live school read |
+| `app/services/cloud_local.py` | the local content and places sync |
+| `app/services/fuel_stations.py` | the whereq.cloud fuel ingest |
+| `app/services/fuel_prices.py` | the whereq.cloud price-series ingest |
+| `app/services/geo_places.py` | the whereq.cloud geography ingest |
+| `app/services/osm_places.py` | the OpenStreetMap POI ingest |
+| `app/fuel_ingest.py` | the fuel ingest command |
+| `app/geo_ingest.py` | the geography ingest command |
+| `app/places_ingest.py` | the POI ingest command |

@@ -1,13 +1,13 @@
-"""The OpenStreetMap (Overpass) POI crawl — into the ``places`` table.
+"""OpenStreetMap (Overpass) POI ingestion into the ``places`` table.
 
 Free, storable, owned data for the map's Local Essentials (pharmacies, walk-in
 clinics, libraries, plazas) and Quick Categories (food, coffee, fuel, parking,
 stays). Each category maps to one or more OSM tag selectors; results are
 upserted idempotently by ``(source='osm', external_id='node/123')`` so re-runs
 refresh rather than duplicate. Schools have their own dedicated pipeline and are
-intentionally not crawled here.
+intentionally not ingested here.
 
-Run:  python -m app.crawler.cli.places [--bbox minLng,minLat,maxLng,maxLat] [--only food,coffee]
+Run:  python -m app.places_ingest [--bbox minLng,minLat,maxLng,maxLat] [--only food,coffee]
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ from app.models.place import Place
 logger = logging.getLogger(__name__)
 
 OVERPASS_URL = "https://overpass-api.de/api/interpreter"
-_HEADERS = {"User-Agent": "whereq.com POI crawler (osm-contact@whereq.com)"}
+_HEADERS = {"User-Agent": "whereq-com POI ingester (osm-contact@example.invalid)"}
 
 # Default area: the Greater Toronto Area, as minLng,minLat,maxLng,maxLat.
 DEFAULT_BBOX: tuple[float, float, float, float] = (-80.0, 43.4, -78.9, 44.1)
@@ -166,13 +166,13 @@ async def _upsert(db: AsyncSession, rows: list[dict], batch: int = 500) -> int:
     return written
 
 
-async def crawl_places(
+async def ingest_places(
     db: AsyncSession,
     bbox: tuple[float, float, float, float] = DEFAULT_BBOX,
     *,
     only: list[str] | None = None,
 ) -> dict[str, int]:
-    """Crawl the configured OSM categories within bbox. Returns {category_key: count}."""
+    """Ingest configured OSM categories within bbox. Returns {category_key: count}."""
     cats = [_BY_KEY[k] for k in only if k in _BY_KEY] if only else OSM_CATEGORIES
     results: dict[str, int] = {}
     async with httpx.AsyncClient(timeout=200.0) as client:
@@ -193,7 +193,7 @@ async def crawl_places(
             results[cat.key] = written
             logger.info("OSM %s: %d features", cat.key, written)
 
-    # Recompute geom from lat/lng for crawled rows (per-row SQL funcs can't be
+    # Recompute geom from lat/lng for ingested rows (per-row SQL funcs can't be
     # bulk-set in the upsert above).
     await db.execute(text(
         "UPDATE places SET geom = ST_SetSRID(ST_MakePoint(longitude, latitude), 4326) "

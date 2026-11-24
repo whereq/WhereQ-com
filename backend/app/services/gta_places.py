@@ -337,8 +337,8 @@ PLACES: dict[str, str] = {
 # Every name here was named in a story that stayed unplaced because the
 # extractor had never heard of it, and every one of them was resolved by the
 # production geocoder and checked with ``--check-places`` (the name resolves
-# inside the municipality claimed here).  The full audit is in
-# ``docs/UNPLACED_AUDIT.md``.
+# inside the municipality claimed here).  The list is the audit's answer, and
+# it lives in the source so that it travels with the code.
 PLACES.update({
     "Toronto Pearson International Airport": "Toronto",
     "Meridian Hall": "Toronto",

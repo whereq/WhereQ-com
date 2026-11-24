@@ -46,6 +46,7 @@ from app.models.geo import (
     GeoConcept,
     GeoSyncState,
 )
+from app.models.cloud_parity import CloudParityCheck
 
 __all__ = [
     "User", "UserSettings", "Place", "PlaceCard", "Neighborhood", "Route", "Story",
@@ -58,4 +59,5 @@ __all__ = [
     "MapsApiConsumer", "MapsApiUsage", "RouteCache",
     "FuelSyncState", "FuelPriceSeries",
     "GeoPlace", "GeoConcept", "GeoSyncState",
+    "CloudParityCheck",
 ]

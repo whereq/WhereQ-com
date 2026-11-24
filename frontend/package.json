@@ -12,7 +12,7 @@
   "dependencies": {
     "@googlemaps/markerclusterer": "^2.6.2",
     "@vis.gl/react-google-maps": "^1.8.3",
-    "@whereq/react": "^0.7.0",
+    "@whereq/react": "^0.9.2",
     "i18next": "^23.14.0",
     "i18next-browser-languagedetector": "^8.0.0",
     "keycloak-js": "^26.2.0",

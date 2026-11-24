@@ -62,7 +62,7 @@ export default function App() {
           </MapProvider>
         </AuthProvider>
         <ErrorToaster />
-        {/* The shared scrollbar, app-wide: every native scrollbar in the app
+        {/* The whereq scrollbar, app-wide: every native scrollbar in the app
             gets the same thin look, and it follows the theme. */}
         <GlobalScrollbar theme="auto" size={6} />
       </ThemeProvider>

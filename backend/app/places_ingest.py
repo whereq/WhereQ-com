@@ -1,9 +1,9 @@
-"""CLI: crawl OpenStreetMap POIs into the places table.
+"""CLI: ingest OpenStreetMap POIs into the places table.
 
 Examples:
-    python -m app.crawler.cli.places                         # full default GTA bbox, all categories
-    python -m app.crawler.cli.places --only food,coffee      # just those categories
-    python -m app.crawler.cli.places --bbox -79.6,43.58,-79.1,43.86   # custom area (minLng,minLat,maxLng,maxLat)
+    python -m app.places_ingest                         # full default GTA bbox, all categories
+    python -m app.places_ingest --only food,coffee      # just those categories
+    python -m app.places_ingest --bbox -79.6,43.58,-79.1,43.86   # custom area (minLng,minLat,maxLng,maxLat)
 """
 
 from __future__ import annotations
@@ -13,22 +13,22 @@ import asyncio
 import logging
 
 from app.core.database import AsyncSessionLocal
-from app.crawler.upstream.osm_places import DEFAULT_BBOX, OSM_CATEGORIES, crawl_places
+from app.services.osm_places import DEFAULT_BBOX, OSM_CATEGORIES, ingest_places
 
 
 from app.core.logging_setup import configure_logging
 
 async def _run(bbox, only) -> None:
     async with AsyncSessionLocal() as db:
-        results = await crawl_places(db, bbox, only=only)
+        results = await ingest_places(db, bbox, only=only)
     total = sum(results.values())
-    print(f"Crawled {total} POIs:")
+    print(f"Ingested {total} POIs:")
     for key, n in results.items():
         print(f"  {key:<10} {n}")
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Crawl OSM POIs into places")
+    parser = argparse.ArgumentParser(description="Ingest OSM POIs into places")
     parser.add_argument("--bbox", help="minLng,minLat,maxLng,maxLat (default: GTA)")
     parser.add_argument("--only", help="CSV of category keys: "
                                        + ",".join(c.key for c in OSM_CATEGORIES))

@@ -19,8 +19,11 @@ export function Footer() {
         <span style={{ opacity: 0.5 }}>· build 2026.05.24</span>
       </span>
       {/* Attribution is a licence obligation, not decoration: OSM data is
-          ODbL 1.0 and Google Maps content carries its own terms. */}
-      <span className="attribution">{t('footer.attribution')}</span>
+          ODbL 1.0 and Google Maps content carries its own terms. The year is
+          the current one — Google's attribution shape requires it. */}
+      <span className="attribution">
+        {t('footer.attribution', { year: new Date().getFullYear() })}
+      </span>
     </footer>
   )
 }

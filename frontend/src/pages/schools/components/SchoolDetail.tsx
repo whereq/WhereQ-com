@@ -39,8 +39,17 @@ function RatingTrend({ scores }: { scores: SchoolDetailT['scores'] }) {
   )
 }
 
-export function SchoolDetail({ t, school, onBack, onViewMap }: {
+export function SchoolDetail({ t, school, onBack, onViewMap, programLabels }: {
   t: ScStrings; school: SchoolDetailT; onBack: () => void; onViewMap: (s: SchoolDetailT) => void
+  /** Programme code → label, from the taxonomy.
+   *
+   *  The programmes a school carries are **codes** — `esl`, `pace` — and
+   *  the taxonomy holds their labels ("English as a Second Language",
+   *  "PACE"). Deriving a label from the code instead mangles the ones
+   *  whose label is not the code in title case, so the label is looked up
+   *  rather than re-derived, and the derivation is only the fallback for a
+   *  code the taxonomy does not list. */
+  programLabels?: Record<string, string>
 }) {
   const c = schoolColor({ type: school.type, board_type: school.board?.type, programs: school.programs })
   return (
@@ -87,7 +96,12 @@ export function SchoolDetail({ t, school, onBack, onViewMap }: {
               {school.address && <Row k={t.detail.address} v={school.address} />}
               {school.phone && <Row k={t.detail.phone} v={school.phone} />}
               <Row k={t.detail.board} v={school.board?.name ?? '—'} />
-              {school.programs.length > 0 && <Row k={t.detail.programs} v={school.programs.map(programLabel).join(' · ')} />}
+              {school.programs.length > 0 && (
+                <Row
+                  k={t.detail.programs}
+                  v={school.programs.map((c) => programLabels?.[c] ?? programLabel(c)).join(' · ')}
+                />
+              )}
             </div>
             {school.scores.some((s) => s.rank_score != null) && (
               <>

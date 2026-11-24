@@ -44,7 +44,7 @@ export const schoolsApi = {
       '/schools/map' + qs({ ...filterParams(opts.filters), q: opts.q, bbox: opts.bbox, limit: opts.limit }),
     ),
 
-  detail: (id: number) => api.get<SchoolDetail>(`/schools/${id}`),
+  detail: (uid: string) => api.get<SchoolDetail>(`/schools/${uid}`),
 
   at: (lat: number, lng: number) => api.get<CatchmentHit[]>(`/schools/at${qs({ lat, lng })}`),
 }

@@ -29,7 +29,7 @@ export function SearchModal() {
   const route = useRouteContext()
   const location = useLocation()
   const navigate = useNavigate()
-  // The gas prices are crawled from whereq.cloud (licensed, metered) — signed-in
+  // The gas prices come from whereq.cloud (licensed, metered) — signed-in
   // users only, like the Google Places autocomplete.
   const { isAuthenticated, login } = useAuth()
   const [query, setQuery] = useState('')

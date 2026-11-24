@@ -42,7 +42,7 @@ export function SchoolsLayer({ enabled, onSelect }: { enabled: boolean; onSelect
   const { t } = useTranslation()
   // The marker library is loaded on demand; the advanced markers need it.
   const AdvancedMarkerElement = useMapsLibrary('marker')?.AdvancedMarkerElement
-  const markers = useRef<Map<number, google.maps.marker.AdvancedMarkerElement>>(new Map())
+  const markers = useRef<Map<string, google.maps.marker.AdvancedMarkerElement>>(new Map())
   const pinFor = useRef<Map<google.maps.marker.AdvancedMarkerElement, SchoolMapPin>>(new Map())
   const clusterer = useRef<MarkerClusterer | null>(null)
   const info = useRef<google.maps.InfoWindow | null>(null)
@@ -71,7 +71,7 @@ export function SchoolsLayer({ enabled, onSelect }: { enabled: boolean; onSelect
     const selectPin = (p: SchoolMapPin) => {
       const subtitle = [p.type, p.board_type].filter(Boolean).map((s) => cap(s as string)).join(' · ')
       onSelect({
-        id: `school-${p.id}`,
+        id: `school-${p.uid}`,
         kind: 'school',
         name: p.name,
         kicker: t('search.kickerSchool', 'School'),
@@ -88,7 +88,7 @@ export function SchoolsLayer({ enabled, onSelect }: { enabled: boolean; onSelect
     const openList = (pins: SchoolMapPin[], position: google.maps.LatLng) => {
       const iw = ensureInfo()
       const items: ListItem[] = pins.map((p) => ({
-        id: p.id, name: p.name, color: SCHOOL_COLOR,
+        id: p.uid, name: p.name, color: SCHOOL_COLOR,
         meta: [p.type, p.board_type].filter(Boolean).join(' · '),
       }))
       iw.setContent(popupListCard(SCHOOL_CLUSTER_COLOR, `${pins.length} schools here`, items))
@@ -97,7 +97,7 @@ export function SchoolsLayer({ enabled, onSelect }: { enabled: boolean; onSelect
       window.google.maps.event.addListenerOnce(iw, 'domready', () => {
         document.querySelectorAll<HTMLElement>('[data-pin]').forEach((el) => {
           el.addEventListener('click', () => {
-            const p = pins.find((s) => s.id === Number(el.dataset.pin))
+            const p = pins.find((s) => s.uid === el.dataset.pin)
             if (p) {
               info.current?.close()
               selectPin(p)
@@ -154,12 +154,12 @@ export function SchoolsLayer({ enabled, onSelect }: { enabled: boolean; onSelect
       const id = ++reqId.current
       schoolsMapApi.map(bbox, PIN_CAP).then((pins) => {
         if (id !== reqId.current || !map) return
-        const next = new Set(pins.map((p) => p.id))
+        const next = new Set(pins.map((p) => p.uid))
         for (const [pid, mk] of markers.current) {
           if (!next.has(pid)) { mk.map = null; pinFor.current.delete(mk); markers.current.delete(pid) }
         }
         for (const p of pins) {
-          if (markers.current.has(p.id)) continue
+          if (markers.current.has(p.uid)) continue
           const mk = withModernListener(new AdvancedMarkerElement({
             position: { lat: p.lat, lng: p.lng },
             content: iconContent(schoolIconUrl(levelLetter(p.type)), 28),
@@ -170,7 +170,7 @@ export function SchoolsLayer({ enabled, onSelect }: { enabled: boolean; onSelect
           }))
           // Advanced markers fire 'gmp-click'.
           mk.addEventListener('gmp-click', () => selectPin(p))
-          markers.current.set(p.id, mk)
+          markers.current.set(p.uid, mk)
           pinFor.current.set(mk, p)
         }
         clusterer.current?.clearMarkers(true)
