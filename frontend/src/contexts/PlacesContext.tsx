@@ -6,7 +6,6 @@ import { placesApi } from '@/lib/placesApi'
 import { schoolsMapApi } from '@/lib/schoolsMapApi'
 import type { MapPin } from '@/types/map'
 import type { PlaceCounts } from '@/types/place'
-import { PINS as FALLBACK_PINS } from '@/components/map/mapData'
 
 interface PlacesContextValue {
   places: PlaceDTO[]
@@ -47,12 +46,17 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
   const loading = placesLoading
   const error = placesError
 
-  // Convert API places to MapPins; fall back to hardcoded pins if API fails or returns empty
+  // Convert API places to MapPins. There is **no mock fallback**: an empty
+  // answer means the API returned no places, and drawing a hardcoded set of
+  // pins instead would put invented places on the map. The fallback that used
+  // to live here was a set of **San Francisco** coordinates — "Pier Coffee",
+  // "Lincoln Elementary", a memorial called "Greybrick Theatre" — and it was
+  // reached whenever `GET /places` failed, including while the API container
+  // was restarting. The map now shows nothing, which is the truth.
   const pins = useMemo(() => {
-    if (places.length === 0 && !loading) return FALLBACK_PINS
     if (places.length === 0) return []
     return places.map(placeToPin)
-  }, [places, loading])
+  }, [places])
 
   // Counts for the sidebar (essentials + quick categories) are viewport-scoped:
   // they track what's actually visible on the map via /places/counts.
