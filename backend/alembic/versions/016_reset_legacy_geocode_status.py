@@ -3,7 +3,7 @@
 Migration 014 removed the city-centre pins from every row the crawler had
 placed that way, but it left the marker behind in ``geocode_status``.  Those
 rows still say *fallback_city* — a value that is not in the documented
-vocabulary (``none|pending|ok|failed|rejected``) and that describes a pin they
+vocabulary (``none|failed|rejected|ok``) and that describes a pin they
 no longer have.  The column was lying about half the corpus.
 
 *none* is what an unplaced row says: the column's own server default, and the
