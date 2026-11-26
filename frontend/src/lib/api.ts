@@ -1,6 +1,7 @@
 import keycloak from '@/auth/keycloak'
 import { ensureFreshToken, getToken } from './auth'
 import { reportError } from './errorBus'
+import { isAbortError } from './requestSlot'
 
 const API_BASE = import.meta.env.VITE_API_URL ?? '/api'
 
@@ -42,11 +43,17 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   let res: Response
   try {
+    // `options` carries the caller's `signal`, so an aborted request tears
+    // down the connection instead of downloading a body nobody will read.
     res = await fetch(`${API_BASE}${path}`, {
       ...options,
       headers,
     })
-  } catch {
+  } catch (err) {
+    // A request the caller aborted is the app tidying up after itself — a
+    // superseded map request, not a failure. It must not raise the network
+    // toast: the user never asked for it and it is not their problem.
+    if (isAbortError(err)) throw err
     // The request never reached the API (offline, DNS, CORS). Every caller
     // swallows this, so it would otherwise look like "no results".
     reportError('network', { code: 'toast.network' })
@@ -77,16 +84,23 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   }
 
   if (res.status === 204) return undefined as T
+  // The body read can itself be aborted (the response headers arrived, then
+  // the slot was cancelled). `res.json()` rejects with the AbortError, which
+  // keeps its name — so it stays recognisable as an abort, not a parse
+  // failure, all the way up to the caller.
   return res.json()
 }
 
 export const api = {
-  get: <T>(path: string) => request<T>(path),
-  post: <T>(path: string, body?: unknown) =>
-    request<T>(path, { method: 'POST', body: JSON.stringify(body) }),
-  patch: <T>(path: string, body?: unknown) =>
-    request<T>(path, { method: 'PATCH', body: JSON.stringify(body) }),
-  delete: (path: string) => request<void>(path, { method: 'DELETE' }),
+  get: <T>(path: string, options?: RequestInit) => request<T>(path, options),
+  // `options` carries the caller's signal; the method and the body stay
+  // fixed, so an options object can never change what the request is.
+  post: <T>(path: string, body?: unknown, options?: RequestInit) =>
+    request<T>(path, { ...options, method: 'POST', body: JSON.stringify(body) }),
+  patch: <T>(path: string, body?: unknown, options?: RequestInit) =>
+    request<T>(path, { ...options, method: 'PATCH', body: JSON.stringify(body) }),
+  delete: (path: string, options?: RequestInit) =>
+    request<void>(path, { ...options, method: 'DELETE' }),
 }
 
 export { ApiError }

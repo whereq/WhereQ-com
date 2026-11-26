@@ -5,6 +5,7 @@ import { clusterIconUrl, clusterSize } from '@/components/map/localMarkers'
 import { idealText } from '@/components/map/popupCard'
 import { ANCHOR_CENTER, withModernListener } from '@/components/map/advancedMarkers'
 import { schoolsApi } from '../api'
+import { RequestSlot } from '@/lib/requestSlot'
 import { schoolColor } from '../colors'
 import type { ScStrings } from '../i18n'
 import type { CatchmentHit, MapPin, SchoolDetail, SchoolFilters } from '../types'
@@ -79,6 +80,8 @@ function MapLayer({ t, filters, query, selected, showBoundary, cluster, canBound
   const polys = useRef<google.maps.Polygon[]>([])
   const selMarker = useRef<google.maps.marker.AdvancedMarkerElement | null>(null)
   const reqId = useRef(0)
+  // One in-flight request: a new viewport cancels the request still in flight.
+  const slot = useRef(new RequestSlot())
   const clusterer = useRef<MarkerClusterer | null>(null)
   const [count, setCount] = useState(0)
   const [capped, setCapped] = useState(false)
@@ -149,7 +152,8 @@ function MapLayer({ t, filters, query, selected, showBoundary, cluster, canBound
       const ne = b.getNorthEast(), sw = b.getSouthWest()
       const bbox = `${sw.lng()},${sw.lat()},${ne.lng()},${ne.lat()}`
       const id = ++reqId.current
-      schoolsApi.mapPins({ filters, q: query, bbox, limit: PIN_CAP + 1 }).then((pins) => {
+      const signal = slot.current.begin()
+      schoolsApi.mapPins({ filters, q: query, bbox, limit: PIN_CAP + 1 }, signal).then((pins) => {
         if (id !== reqId.current || !map) return
         const cap = pins.length > PIN_CAP
         const shown = cap ? pins.slice(0, PIN_CAP) : pins
@@ -199,7 +203,7 @@ function MapLayer({ t, filters, query, selected, showBoundary, cluster, canBound
     const onIdle = () => { window.clearTimeout(timer); timer = window.setTimeout(fetchPins, 250) }
     const l = map.addListener('idle', onIdle)
     fetchPins()
-    return () => { window.clearTimeout(timer); l.remove() }
+    return () => { slot.current.cancel(); window.clearTimeout(timer); l.remove() }
   }, [map, filters, query, selected?.uid, applyMarkers, AdvancedMarkerElement])
 
   // boundary polygons of the selected school

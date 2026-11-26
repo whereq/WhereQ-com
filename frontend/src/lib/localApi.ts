@@ -25,11 +25,11 @@ export interface LocalMapQuery {
 }
 
 export const localApi = {
-  map: (o: LocalMapQuery) =>
+  map: (o: LocalMapQuery, signal?: AbortSignal) =>
     api.get<LocalPin[]>('/local/map' + qs({
       bbox: o.bbox, types: o.types, categories: o.categories, sources: o.sources,
       from: o.from, to: o.to, q: o.q, limit: o.limit,
-    })),
+    }), { signal }),
   detail: (id: number) => api.get<LocalContentDetail>(`/local/${id}`),
   taxonomy: () => api.get<LocalTaxonomy>('/local/taxonomy'),
   search: (o: { q: string; types?: string[]; categories?: string[]; sources?: string[]

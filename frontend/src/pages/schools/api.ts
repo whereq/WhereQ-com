@@ -39,9 +39,10 @@ export const schoolsApi = {
       }),
     ),
 
-  mapPins: (opts: { filters: Partial<SchoolFilters>; q?: string; bbox?: string; limit?: number }) =>
+  mapPins: (opts: { filters: Partial<SchoolFilters>; q?: string; bbox?: string; limit?: number }, signal?: AbortSignal) =>
     api.get<MapPin[]>(
       '/schools/map' + qs({ ...filterParams(opts.filters), q: opts.q, bbox: opts.bbox, limit: opts.limit }),
+      { signal },
     ),
 
   detail: (uid: string) => api.get<SchoolDetail>(`/schools/${uid}`),

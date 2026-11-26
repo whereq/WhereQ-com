@@ -31,8 +31,8 @@ export interface SchoolBoundary {
 }
 
 export const schoolsMapApi = {
-  map: (bbox: string, limit = 3000) =>
-    api.get<SchoolMapPin[]>(`/schools/map?bbox=${encodeURIComponent(bbox)}&limit=${limit}`),
+  map: (bbox: string, limit = 3000, signal?: AbortSignal) =>
+    api.get<SchoolMapPin[]>(`/schools/map?bbox=${encodeURIComponent(bbox)}&limit=${limit}`, { signal }),
   /** Accurate viewport school count via the paginated list's `total`. */
   count: async (bbox: string): Promise<number> =>
     (await api.get<{ total: number }>(`/schools?bbox=${encodeURIComponent(bbox)}&page_size=1`)).total,

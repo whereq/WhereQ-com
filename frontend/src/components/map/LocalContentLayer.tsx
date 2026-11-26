@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useMap, useMapsLibrary } from '@vis.gl/react-google-maps'
 import { MarkerClusterer, SuperClusterAlgorithm, type Cluster } from '@googlemaps/markerclusterer'
 import { localApi } from '@/lib/localApi'
+import { RequestSlot } from '@/lib/requestSlot'
 import {
   CATEGORY_LABELS, categoryColor, clusterIconUrl, clusterSize, formatWhen,
   LOCAL_CLUSTER_COLOR, LOCAL_PIN_SIZE, localPinIconUrl,
@@ -44,6 +45,8 @@ export function LocalContentLayer({ enabledTypes, categories, sources, fromIso, 
   const clusterer = useRef<MarkerClusterer | null>(null)
   const info = useRef<google.maps.InfoWindow | null>(null)
   const reqId = useRef(0)
+  // One in-flight request: a new viewport cancels the request still in flight.
+  const slot = useRef(new RequestSlot())
 
   const clearAll = () => {
     clusterer.current?.clearMarkers()
@@ -169,9 +172,10 @@ export function LocalContentLayer({ enabledTypes, categories, sources, fromIso, 
       const ne = b.getNorthEast(), sw = b.getSouthWest()
       const bbox = `${sw.lng()},${sw.lat()},${ne.lng()},${ne.lat()}`
       const id = ++reqId.current
+      const signal = slot.current.begin()
       localApi.map({
         bbox, types: enabledTypes, categories, sources, from: fromIso, limit: PIN_CAP + 1,
-      }).then((pins) => {
+      }, signal).then((pins) => {
         if (id !== reqId.current || !map) return
         const capped = pins.length > PIN_CAP
         const shown = capped ? pins.slice(0, PIN_CAP) : pins
@@ -210,6 +214,7 @@ export function LocalContentLayer({ enabledTypes, categories, sources, fromIso, 
     window.addEventListener('whereq:popup-close', onPopupClose)
     fetchPins()
     return () => {
+      slot.current.cancel()
       window.clearTimeout(timer); listener.remove()
       window.removeEventListener('whereq:popup-close', onPopupClose)
     }

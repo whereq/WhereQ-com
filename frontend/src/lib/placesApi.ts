@@ -26,14 +26,14 @@ function qs(params: Record<string, string | number | undefined>): string {
 
 export const placesApi = {
   /** Viewport POI pins for the given kinds (essentials) and/or POI categories. */
-  map: async (opts: { bbox: string; kinds?: string[]; categories?: string[]; cuisines?: string[]; limit?: number }) => {
+  map: async (opts: { bbox: string; kinds?: string[]; categories?: string[]; cuisines?: string[]; limit?: number }, signal?: AbortSignal) => {
     const raw = await api.get<RawPin[]>('/places/map' + qs({
       bbox: opts.bbox,
       kinds: opts.kinds?.join(','),
       categories: opts.categories?.join(','),
       cuisines: opts.cuisines?.join(','),
       limit: opts.limit,
-    }))
+    }), { signal })
     return raw.map((r): PlacePin => ({
       id: r.id, title: r.name, lat: r.lat, lng: r.lng,
       kind: r.kind, category: r.category, sub: r.sub,

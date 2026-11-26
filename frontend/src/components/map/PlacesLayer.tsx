@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useMap, useMapsLibrary } from '@vis.gl/react-google-maps'
 import { MarkerClusterer, SuperClusterAlgorithm, type Cluster } from '@googlemaps/markerclusterer'
 import { placesApi } from '@/lib/placesApi'
+import { RequestSlot } from '@/lib/requestSlot'
 import { clusterIconUrl, clusterSize } from './localMarkers'
 import { POI_CLUSTER_COLOR, POI_PIN_SIZE, poiIconUrl, poiStyle } from './placeMarkers'
 import { popupListCard, type ListItem } from './popupCard'
@@ -37,6 +38,9 @@ export function PlacesLayer({ kinds, categories, cuisines, onSelect }: Props) {
   const clusterer = useRef<MarkerClusterer | null>(null)
   const info = useRef<google.maps.InfoWindow | null>(null)
   const reqId = useRef(0)
+  // One in-flight request: a new viewport cancels the request still in flight
+  // instead of downloading a 239 KB body nobody will read.
+  const slot = useRef(new RequestSlot())
 
   const clearAll = () => {
     clusterer.current?.clearMarkers()
@@ -151,7 +155,8 @@ export function PlacesLayer({ kinds, categories, cuisines, onSelect }: Props) {
       const ne = b.getNorthEast(), sw = b.getSouthWest()
       const bbox = `${sw.lng()},${sw.lat()},${ne.lng()},${ne.lat()}`
       const id = ++reqId.current
-      placesApi.map({ bbox, kinds, categories, cuisines, limit: PIN_CAP }).then((pins) => {
+      const signal = slot.current.begin()
+      placesApi.map({ bbox, kinds, categories, cuisines, limit: PIN_CAP }, signal).then((pins) => {
         if (id !== reqId.current || !map) return
         const next = new Set(pins.map((p) => p.id))
         for (const p of pins) {
@@ -185,6 +190,7 @@ export function PlacesLayer({ kinds, categories, cuisines, onSelect }: Props) {
     window.addEventListener('whereq:popup-close', onPopupClose)
     fetchPins()
     return () => {
+      slot.current.cancel()
       window.clearTimeout(timer); listener.remove()
       window.removeEventListener('whereq:popup-close', onPopupClose)
     }

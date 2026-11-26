@@ -42,14 +42,14 @@ export const geoApi = {
     })),
 
   /** Every outline inside a viewport, in one response. */
-  boundaries: (opts: { bbox?: string; kind?: string[]; source?: string[]; simplifyM?: number; limit?: number }) =>
+  boundaries: (opts: { bbox?: string; kind?: string[]; source?: string[]; simplifyM?: number; limit?: number }, signal?: AbortSignal) =>
     api.get<GeoBoundaryList>('/geo/boundaries' + qs({
       bbox: opts.bbox,
       kind: opts.kind?.join(','),
       source: opts.source?.join(','),
       simplify_m: opts.simplifyM,
       limit: opts.limit,
-    })),
+    }), { signal }),
 
   /** One place's outline. */
   boundary: (uid: string, simplifyM?: number) =>

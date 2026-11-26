@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useMap, useMapsLibrary } from '@vis.gl/react-google-maps'
 import { MarkerClusterer, SuperClusterAlgorithm, type Cluster } from '@googlemaps/markerclusterer'
 import { schoolsMapApi, type SchoolMapPin } from '@/lib/schoolsMapApi'
+import { RequestSlot } from '@/lib/requestSlot'
 import { clusterIconUrl, clusterSize } from './localMarkers'
 import { popupListCard, type ListItem } from './popupCard'
 import { ANCHOR_CENTER, clusterContent, iconContent, withModernListener } from './advancedMarkers'
@@ -47,6 +48,8 @@ export function SchoolsLayer({ enabled, onSelect }: { enabled: boolean; onSelect
   const clusterer = useRef<MarkerClusterer | null>(null)
   const info = useRef<google.maps.InfoWindow | null>(null)
   const reqId = useRef(0)
+  // One in-flight request: a new viewport cancels the request still in flight.
+  const slot = useRef(new RequestSlot())
 
   useEffect(() => {
     if (!map || enabled) return
@@ -152,7 +155,8 @@ export function SchoolsLayer({ enabled, onSelect }: { enabled: boolean; onSelect
       const ne = b.getNorthEast(), sw = b.getSouthWest()
       const bbox = `${sw.lng()},${sw.lat()},${ne.lng()},${ne.lat()}`
       const id = ++reqId.current
-      schoolsMapApi.map(bbox, PIN_CAP).then((pins) => {
+      const signal = slot.current.begin()
+      schoolsMapApi.map(bbox, PIN_CAP, signal).then((pins) => {
         if (id !== reqId.current || !map) return
         const next = new Set(pins.map((p) => p.uid))
         for (const [pid, mk] of markers.current) {
@@ -184,6 +188,7 @@ export function SchoolsLayer({ enabled, onSelect }: { enabled: boolean; onSelect
     window.addEventListener('whereq:popup-close', onPopupClose)
     fetchPins()
     return () => {
+      slot.current.cancel()
       window.clearTimeout(timer); listener.remove()
       window.removeEventListener('whereq:popup-close', onPopupClose)
     }

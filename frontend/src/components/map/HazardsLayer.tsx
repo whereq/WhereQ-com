@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useMap, useMapsLibrary } from '@vis.gl/react-google-maps'
 import { hazardsApi } from '@/lib/hazardsApi'
+import { RequestSlot } from '@/lib/requestSlot'
 import { iconContent, withModernListener } from './advancedMarkers'
 import type { HazardPin } from '@/types/hazard'
 import type { MapSelection } from '@/types/selection'
@@ -43,6 +44,8 @@ export function HazardsLayer({ enabled, onSelect }: { enabled: boolean; onSelect
   const AdvancedMarkerElement = useMapsLibrary('marker')?.AdvancedMarkerElement
   const markers = useRef<Map<number, google.maps.marker.AdvancedMarkerElement>>(new Map())
   const reqId = useRef(0)
+  // One in-flight request: a new viewport cancels the request still in flight.
+  const slot = useRef(new RequestSlot())
 
   const clearAll = () => {
     for (const [, mk] of markers.current) mk.map = null
@@ -81,7 +84,8 @@ export function HazardsLayer({ enabled, onSelect }: { enabled: boolean; onSelect
       const ne = b.getNorthEast(), sw = b.getSouthWest()
       const bbox = `${sw.lng()},${sw.lat()},${ne.lng()},${ne.lat()}`
       const id = ++reqId.current
-      hazardsApi.map(bbox).then((pins) => {
+      const signal = slot.current.begin()
+      hazardsApi.map(bbox, signal).then((pins) => {
         if (id !== reqId.current || !map) return
         const next = new Set(pins.map((p) => p.id))
         for (const [pid, mk] of markers.current) {
@@ -114,6 +118,7 @@ export function HazardsLayer({ enabled, onSelect }: { enabled: boolean; onSelect
     window.addEventListener('whereq:hazards-refresh', onRefresh)
     fetchPins()
     return () => {
+      slot.current.cancel()
       window.clearTimeout(timer); listener.remove()
       window.removeEventListener('whereq:hazards-refresh', onRefresh)
     }

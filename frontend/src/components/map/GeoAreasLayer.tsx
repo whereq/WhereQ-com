@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useMap } from '@vis.gl/react-google-maps'
 import { geoApi } from '@/lib/geoApi'
+import { RequestSlot } from '@/lib/requestSlot'
 import type { GeoBoundary } from '@/types/geo'
 import type { MapSelection } from '@/types/selection'
 import { colorForKind, centroidOf, polygonsOf, toPath } from './geoStyles'
@@ -55,6 +56,8 @@ export function GeoAreasLayer({
   const { t } = useTranslation()
   const polygons = useRef<Map<string, google.maps.Polygon[]>>(new Map())
   const reqId = useRef(0)
+  // One in-flight request: a new viewport cancels the request still in flight.
+  const slot = useRef(new RequestSlot())
   // The pick handler is held in a ref: the outlines outlive a re-render, and
   // a polygon built under an older handler would call a stale callback.
   // The translator is kept beside it for the same reason — a language change
@@ -74,8 +77,10 @@ export function GeoAreasLayer({
     if (!map || enabled) return
     // Invalidate any request already in flight: its response would otherwise
     // still look current and would draw the outlines on a map where the layer
-    // is now off — and nothing would ever remove them.
+    // is now off — and nothing would ever remove them. Cancelling it also
+    // stops the body being downloaded for an answer nobody will use.
     reqId.current += 1
+    slot.current.cancel()
     clearAll()
   }, [map, enabled])  // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -155,7 +160,8 @@ export function GeoAreasLayer({
       const ne = b.getNorthEast(), sw = b.getSouthWest()
       const bbox = `${sw.lng()},${sw.lat()},${ne.lng()},${ne.lat()}`
       const id = ++reqId.current
-      geoApi.boundaries({ bbox, kind: kinds, limit: OUTLINE_CAP }).then((res) => {
+      const signal = slot.current.begin()
+      geoApi.boundaries({ bbox, kind: kinds, limit: OUTLINE_CAP }, signal).then((res) => {
         if (id !== reqId.current || !map) return
         if (res.truncated) {
           // The answer was cut short — the client says so rather than
@@ -171,6 +177,7 @@ export function GeoAreasLayer({
     const listener = map.addListener('idle', onIdle)
     fetchOutlines()
     return () => {
+      slot.current.cancel()
       window.clearTimeout(timer); listener.remove()
     }
   }, [map, enabled, onSelect])  // eslint-disable-line react-hooks/exhaustive-deps
