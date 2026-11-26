@@ -501,11 +501,17 @@ async def _nearby_schools(db, lat, lng, radius_m, cats, limit):
 def _interleave(buckets: dict[str, list[NearbyItem]], order: tuple[str, ...]) -> list[NearbyItem]:
     """Merge the per-category lists round-robin, nearest first within each.
 
-    A plain distance sort would let one category swallow the whole list: the
-    crawler's news carries a fallback coordinate for thousands of rows, so they
-    all sit at distance 0. Taking the nearest item of each category in turn
-    keeps every category represented — which is the whole point of "everything
-    nearby".
+    A plain distance sort would let one category swallow the whole list.
+    Measured on PROD, downtown Toronto, a 2 km radius: a plain top-50 by
+    distance is 17 coffee, 14 parking and 12 food — and **no clinic and no
+    fuel station at all**, though 89 and 6 are within the radius. Taking the
+    nearest item of each category in turn keeps every category represented,
+    which is the whole point of "everything nearby".
+
+    (It was originally about a different artifact: thousands of crawled news
+    rows used to sit at distance 0 on a city-centre fallback coordinate.
+    Migration 014 unplaced them, so that pile is gone — the round-robin stays
+    because the reason above still holds.)
     """
     out: list[NearbyItem] = []
     index = 0
