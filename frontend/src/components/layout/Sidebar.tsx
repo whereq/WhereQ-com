@@ -10,24 +10,12 @@ import { useMyRoutes } from '@/hooks/useMyRoutes'
 import { Button } from '@/components/ui/Button'
 import { SidebarSearch } from '@/components/search/SidebarSearch'
 import { FOOD_CUISINES } from '@/lib/foodCuisines'
+import { fmtDist, metersBetween } from '@/lib/distance'
 import type { MapStyle } from '@/types/map'
 
 /** Inline "sign in to use this" prompt for auth-gated sections. */
 function SignInNote({ label, onSignIn }: { label: string; onSignIn: () => void }) {
   return <button className="signin-note" onClick={onSignIn}>{label}</button>
-}
-
-function metersBetween(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
-  const R = 6371000
-  const dLat = (b.lat - a.lat) * Math.PI / 180
-  const dLng = (b.lng - a.lng) * Math.PI / 180
-  const la1 = a.lat * Math.PI / 180, la2 = b.lat * Math.PI / 180
-  const h = Math.sin(dLat / 2) ** 2 + Math.cos(la1) * Math.cos(la2) * Math.sin(dLng / 2) ** 2
-  return 2 * R * Math.asin(Math.sqrt(h))
-}
-
-function fmtDist(m: number): string {
-  return m < 1000 ? `${Math.round(m)}m` : `${(m / 1000).toFixed(1)}km`
 }
 
 // ── Small icon components ──────────────────────────────────────

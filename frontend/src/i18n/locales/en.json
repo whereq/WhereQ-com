@@ -288,7 +288,7 @@
   "pages": {
     "guides": { "title": "Neighbourhood Guides", "subtitle": "Explore scored neighbourhoods with walkability, transit, and local insights." },
     "memorials": { "title": "Memorial Stories", "subtitle": "Discover the hidden histories and personal stories tied to meaningful places." },
-    "social": { "title": "Social", "subtitle": "Connect with friends and discover who's nearby." },
+    "social": { "title": "Social", "subtitle": "Connect with friends and discover who's nearby.", "loading": "Loading your friends…", "empty": "You have no friends yet.", "emptyHint": "A friend appears here once they accept your request.", "offline": "Offline", "error": "Could not load your friends.", "retry": "Try again", "locked": "Sign in to see your friends", "lockedHint": "Your friends and their live location are tied to your account." },
     "routes": { "title": "Routes", "subtitle": "Track your journeys, explore public routes, and share your adventures.", "error": "Could not load routes." }
   },
   "cards": {

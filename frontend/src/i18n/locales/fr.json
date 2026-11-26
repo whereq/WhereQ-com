@@ -288,7 +288,7 @@
   "pages": {
     "guides": { "title": "Guides de Quartier", "subtitle": "Explorez des quartiers notés avec marche, transit et informations locales." },
     "memorials": { "title": "Histoires Mémorielles", "subtitle": "Découvrez les histoires cachées et les récits personnels liés à des lieux significatifs." },
-    "social": { "title": "Social", "subtitle": "Connectez-vous avec des amis et découvrez qui est à proximité." },
+    "social": { "title": "Social", "subtitle": "Connectez-vous avec des amis et découvrez qui est à proximité.", "loading": "Chargement de vos amis…", "empty": "Vous n'avez pas encore d'amis.", "emptyHint": "Un ami apparaît ici dès qu'il accepte votre demande.", "offline": "Hors ligne", "error": "Impossible de charger vos amis.", "retry": "Réessayer", "locked": "Connectez-vous pour voir vos amis", "lockedHint": "Vos amis et leur position en direct sont liés à votre compte." },
     "routes": { "title": "Itinéraires", "subtitle": "Suivez vos trajets, explorez des itinéraires publics et partagez vos aventures.", "error": "Impossible de charger les itinéraires." }
   },
   "cards": {

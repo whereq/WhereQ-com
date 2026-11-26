@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { api } from '@/lib/api'
 import { useAuth } from '@/contexts/AuthContext'
+import { metersBetween } from '@/lib/distance'
 
 export interface NeighborhoodInfo {
   name: string
@@ -14,15 +15,6 @@ export interface NeighborhoodInfo {
 }
 
 interface LatLng { lat: number; lng: number }
-
-function metersBetween(a: LatLng, b: LatLng): number {
-  const R = 6371000
-  const dLat = (b.lat - a.lat) * Math.PI / 180
-  const dLng = (b.lng - a.lng) * Math.PI / 180
-  const la1 = a.lat * Math.PI / 180, la2 = b.lat * Math.PI / 180
-  const h = Math.sin(dLat / 2) ** 2 + Math.cos(la1) * Math.cos(la2) * Math.sin(dLng / 2) ** 2
-  return 2 * R * Math.asin(Math.sqrt(h))
-}
 
 /** Reverse-geocode a point to { name, city, country } using the Google geocoder
  *  (the map already loads the Maps JS API). Resolves to blanks on any failure. */

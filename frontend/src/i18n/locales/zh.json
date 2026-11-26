@@ -288,7 +288,7 @@
   "pages": {
     "guides": { "title": "街区导览", "subtitle": "探索带有步行性、交通和本地洞察评分的街区。" },
     "memorials": { "title": "纪念故事", "subtitle": "发现与有意义地点相关的隐藏历史和个人故事。" },
-    "social": { "title": "社交", "subtitle": "与好友联系，发现谁在附近。" },
+    "social": { "title": "社交", "subtitle": "与好友联系，发现谁在附近。", "loading": "正在加载你的好友…", "empty": "你还没有好友。", "emptyHint": "对方接受你的好友请求后，就会出现在这里。", "offline": "离线", "error": "无法加载你的好友。", "retry": "重试", "locked": "登录后查看你的好友", "lockedHint": "你的好友和他们的实时位置与你的账号绑定。" },
     "routes": { "title": "路线", "subtitle": "追踪您的旅程，探索公共路线，分享您的冒险。", "error": "无法加载路线。" }
   },
   "cards": {
