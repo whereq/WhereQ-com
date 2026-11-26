@@ -106,6 +106,7 @@ async def autocomplete(
             # enabled / key restricted) — surface as a clean upstream error, not 500.
             raise MapsError(502, "upstream_error", "Autocomplete provider request failed")
         if provider is None:
+            usage.not_billable()
             raise MapsError(503, "unavailable", "Autocomplete provider is not configured")
 
         usage.provider = provider or "google_places"
@@ -152,6 +153,7 @@ async def geocode(
 
         if result is None:
             if not manager.providers_available():
+                usage.not_billable()
                 raise MapsError(503, "unavailable", "No geocoding provider is available")
             usage.provider = "miss"
             raise MapsError(404, "not_found", "No match for the given address")
@@ -184,6 +186,7 @@ async def reverse(
 
         if result is None:
             if not manager.providers_available():
+                usage.not_billable()
                 raise MapsError(503, "unavailable", "No reverse-geocoding provider is available")
             usage.provider = "miss"
             raise MapsError(404, "not_found", "No address for the given coordinate")
@@ -224,6 +227,7 @@ async def route(
 
         if result is None:
             if not routing.is_configured():
+                usage.not_billable()
                 raise MapsError(503, "unavailable", "Routing provider is not configured")
             usage.provider = "miss"
             raise MapsError(404, "not_found", "No route found between origin and destination")
@@ -262,6 +266,7 @@ async def matrix(
             raise MapsError(502, "upstream_error", "Matrix provider request failed")
 
         if provider is None:
+            usage.not_billable()
             raise MapsError(503, "unavailable", "Matrix provider is not configured")
 
         usage.provider = provider

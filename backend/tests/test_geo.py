@@ -447,3 +447,99 @@ def test_the_geo_settings_exist():
     # The API allows 30 requests/minute — the same limit as the fuel ones.
     assert settings.GEO_INGEST_MIN_INTERVAL >= 2.0
     assert settings.GEO_BOUNDARY_SIMPLIFY_M > 0
+
+
+# ── the round-robin ─────────────────────────────────────────────────────────
+def test_geo_rotation_key_uses_the_last_attempt():
+    """The rotation key must move when a target *fails*.
+
+    ``mark_state`` advances ``last_attempt_at`` on every try and keeps the
+    last successful ``last_synced_at`` on failure — so a key taken from the
+    success would pin a failing target at the front of the queue for ever.
+    """
+    from datetime import datetime, timedelta, timezone
+    from types import SimpleNamespace
+
+    from app.services.geo_places import _rotation_key
+
+    now = datetime.now(timezone.utc)
+    synced = now - timedelta(days=3)
+    attempted = now - timedelta(minutes=5)
+    row = SimpleNamespace(last_synced_at=synced, last_attempt_at=attempted)
+    assert _rotation_key(row) == attempted
+
+
+def test_geo_rotation_key_falls_back_to_last_synced_for_legacy_rows():
+    from datetime import datetime, timedelta, timezone
+    from types import SimpleNamespace
+
+    from app.services.geo_places import _rotation_key
+
+    synced = datetime.now(timezone.utc) - timedelta(days=3)
+    assert _rotation_key(SimpleNamespace(
+        last_synced_at=synced, last_attempt_at=None)) == synced
+
+
+def test_geo_targets_due_rotates_least_recently_touched_first():
+    """The scheduler takes ``due[:N]``, so an unrotated list starves.
+
+    Three shapes matter here:
+
+    * a target that has **never synced** (``last_synced_at`` NULL) is due for
+      ever, so without a rotation it sits at its configured position in the
+      list, is picked every tick, and every target behind it never syncs;
+    * a target that synced a long time ago is due again;
+    * a target nobody has touched yet has no state row at all.
+    """
+    import asyncio
+    from datetime import datetime, timedelta, timezone
+    from types import SimpleNamespace
+
+    from app.services import geo_places
+    from app.services.geo_places import GeoTarget, targets_due
+
+    now = datetime.now(timezone.utc)
+    never_synced = GeoTarget(bbox="-80.3,43.6,-79.2,44.2")
+    stale = GeoTarget(kind="ward", country="CA")
+    untouched = GeoTarget(kind="municipality", country="CA")
+
+    rows = {
+        never_synced.key: SimpleNamespace(
+            last_synced_at=None,
+            last_attempt_at=now - timedelta(minutes=10),
+        ),
+        stale.key: SimpleNamespace(
+            last_synced_at=now - timedelta(days=30),
+            last_attempt_at=now - timedelta(minutes=20),
+        ),
+        untouched.key: None,
+    }
+
+    class _Result:
+        def __init__(self, row):
+            self._row = row
+
+        def scalar_one_or_none(self):
+            return self._row
+
+    class _DB:
+        async def execute(self, stmt):
+            params = stmt.compile().params
+            key = next(v for k, v in params.items() if k.startswith("target_key"))
+            return _Result(rows.get(key))
+
+    original = geo_places.configured_targets
+    geo_places.configured_targets = lambda: [never_synced, stale, untouched]
+    try:
+        due = asyncio.run(targets_due(_DB()))
+    finally:
+        geo_places.configured_targets = original
+
+    keys = [t.key for t in due]
+    assert keys == [untouched.key, stale.key, never_synced.key], (
+        f"expected the least-recently-touched target first, got {keys}"
+    )
+    assert keys[0] != never_synced.key, (
+        "the never-synced target must not stay pinned at the front of the "
+        "queue — it is due for ever and would starve everything behind it"
+    )

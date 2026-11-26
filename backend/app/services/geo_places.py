@@ -607,15 +607,47 @@ async def sync_concepts(db: AsyncSession, client: whereq_cloud.Client) -> int:
 
 
 # ── due-ness ────────────────────────────────────────────────────────────────
+_EPOCH = datetime.min.replace(tzinfo=timezone.utc)
+
+
+def _rotation_key(row: GeoSyncState | None) -> datetime:
+    """The round-robin sort key: when we last *touched* this target.
+
+    The last **attempt**, not the last success — ``mark_state`` advances
+    ``last_attempt_at`` on every try and ``last_synced_at`` only on success,
+    so the attempt is always the later of the two. A target that keeps
+    failing therefore moves to the back of the queue after each try instead
+    of staying pinned at the front.
+
+    ``last_synced_at`` is the fallback, for rows written before
+    ``last_attempt_at`` existed.
+    """
+    if row is None:
+        return _EPOCH
+    return row.last_attempt_at or row.last_synced_at or _EPOCH
+
+
 async def targets_due(db: AsyncSession) -> list[GeoTarget]:
     """The targets whose refresh interval has elapsed.
 
     A target with no state row is due (a fresh database syncs everything on
     the first pass).
+
+    The list comes back **rotated** — least-recently-touched first — so the
+    batch the scheduler takes (``due[:N]``) does not always contain the same
+    targets. Without the rotation a target that keeps failing stays due for
+    ever (``mark_state`` keeps the last *successful* sync on failure, and a
+    target that never synced keeps ``last_synced_at`` NULL), so it would sit
+    at its configured position in the list, be picked every tick, and starve
+    every target behind it.
+
+    The key is the last **attempt** — ``mark_state`` advances
+    ``last_attempt_at`` on every try and ``last_synced_at`` only on success, so
+    the attempt is always the later of the two.
     """
     now = datetime.now(timezone.utc)
     interval = settings.GEO_INGEST_INTERVAL_HOURS
-    due: list[GeoTarget] = []
+    due: list[tuple[GeoTarget, datetime]] = []
     for target in configured_targets():
         row = (
             await db.execute(
@@ -623,12 +655,13 @@ async def targets_due(db: AsyncSession) -> list[GeoTarget]:
             )
         ).scalar_one_or_none()
         if row is None or row.last_synced_at is None:
-            due.append(target)
+            due.append((target, _rotation_key(row)))
             continue
         age_h = (now - row.last_synced_at).total_seconds() / 3600
         if age_h >= interval:
-            due.append(target)
-    return due
+            due.append((target, _rotation_key(row)))
+    due.sort(key=lambda pair: pair[1])
+    return [target for target, _ in due]
 
 
 async def count_places_async(db: AsyncSession) -> int:

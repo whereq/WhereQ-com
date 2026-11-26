@@ -368,3 +368,69 @@ def test_radius_condition_uses_metres_not_degrees():
     assert "ST_DWithin" in sql
     assert "geography" in sql.lower(), sql
     assert "25000" in sql  # 25 km in metres, not degrees
+
+
+# ── the round-robin ─────────────────────────────────────────────────────────
+def test_rotation_order_uses_the_last_attempt_not_the_last_success():
+    """The rotation key must move when a target *fails*.
+
+    ``record_sync`` advances ``last_attempt_at`` on every try and
+    ``last_synced_at`` only on success. A target that synced once and then
+    kept failing has a stale ``last_synced_at`` that never moves — so a key
+    taken from it pins that target at the front of the queue for ever and
+    starves every target behind it.
+    """
+    from datetime import datetime, timedelta, timezone
+
+    from app.services.fuel_stations import _rotation_order
+
+    now = datetime.now(timezone.utc)
+    synced = now - timedelta(days=3)
+    attempted = now - timedelta(minutes=5)
+    state = SimpleNamespace(
+        last_synced_at=synced,
+        last_attempt_at=attempted,
+        last_error="boom",
+    )
+    assert _rotation_order(state) == attempted, (
+        "the rotation key must be the last ATTEMPT, so a failing target "
+        "rotates to the back instead of monopolising the batch"
+    )
+
+
+def test_rotation_order_falls_back_to_last_synced_for_legacy_rows():
+    """Rows written before ``last_attempt_at`` existed still have to sort."""
+    from datetime import datetime, timedelta, timezone
+
+    from app.services.fuel_stations import _rotation_order
+
+    synced = datetime.now(timezone.utc) - timedelta(days=3)
+    state = SimpleNamespace(last_synced_at=synced, last_attempt_at=None)
+    assert _rotation_order(state) == synced
+
+
+def test_rotation_order_of_an_untouched_target_is_the_epoch():
+    from app.services.fuel_stations import _EPOCH, _rotation_order
+
+    assert _rotation_order(None) == _EPOCH
+    assert _rotation_order(
+        SimpleNamespace(last_synced_at=None, last_attempt_at=None)) == _EPOCH
+
+
+def test_a_failing_target_is_due_and_a_never_synced_one_is_too():
+    """``is_due`` keeps a failed target in the queue — which is exactly why
+    the rotation has to exist."""
+    from datetime import datetime, timedelta, timezone
+
+    from app.services.fuel_stations import is_due
+
+    now = datetime.now(timezone.utc)
+    failed = SimpleNamespace(
+        last_synced_at=now - timedelta(days=3),
+        last_attempt_at=now - timedelta(minutes=5),
+        last_error="boom",
+    )
+    never = SimpleNamespace(last_synced_at=None, last_attempt_at=None,
+                             last_error=None)
+    assert is_due(failed, 6) is True
+    assert is_due(never, 6) is True

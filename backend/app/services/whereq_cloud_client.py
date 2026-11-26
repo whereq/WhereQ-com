@@ -21,9 +21,11 @@ from __future__ import annotations
 
 import logging
 import re
+import threading
 import time
 from typing import Any, Callable
 
+import httpx
 import whereq_cloud
 
 from app.core.config import settings
@@ -104,6 +106,12 @@ class Throttle:
     def __init__(self, min_interval: float | Callable[[], float] = 0.0) -> None:
         self._interval = min_interval
         self._last = 0.0
+        # The limiter is shared across every whereq.cloud feed and called from
+        # worker threads (asyncio.to_thread) that run concurrently — so the
+        # read-compute-sleep-write below must be atomic, or two threads read the
+        # same ``_last``, sleep the same delay and fire together, bursting past
+        # the key's sliding-window limit (a self-inflicted 429).
+        self._lock = threading.Lock()
 
     @property
     def min_interval(self) -> float:
@@ -111,11 +119,11 @@ class Throttle:
         return max(0.0, value)
 
     def wait(self) -> None:
-        now = time.monotonic()
-        delay = self.min_interval - (now - self._last)
-        if delay > 0:
-            time.sleep(delay)
-        self._last = time.monotonic()
+        with self._lock:
+            delay = self.min_interval - (time.monotonic() - self._last)
+            if delay > 0:
+                time.sleep(delay)
+            self._last = time.monotonic()
 
 
 def shared_interval() -> float:
@@ -170,10 +178,17 @@ def call_with_retry(fn, *, attempts: int = 5, **kwargs: Any) -> Any:
         except whereq_cloud.WhereqError as exc:
             last = exc
             if exc.status != 429 and exc.status < 500:
-                raise
-            delay = retry_delay(exc, attempt)
+                raise  # a real error (bad params) — don't retry
+        except httpx.TransportError as exc:
+            # Transient transport failure (connect/read timeout, reset) — the
+            # SDK can surface these raw; they're exactly what a retry is for.
+            last = exc
+        # Back off and retry — but never sleep after the final attempt (that
+        # only delays surfacing the error by up to the capped backoff).
+        if attempt < attempts - 1:
+            delay = retry_delay(last, attempt)
             logger.warning("whereq.cloud %s — retrying in %.1fs (attempt %d/%d)",
-                           exc.message, delay, attempt + 1, attempts)
+                           getattr(last, "message", None) or last, delay, attempt + 1, attempts)
             time.sleep(delay)
     assert last is not None
     raise last

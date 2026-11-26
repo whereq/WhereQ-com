@@ -52,11 +52,18 @@ async def record_usage(db: AsyncSession, consumer_id: uuid.UUID, endpoint: str,
 class _UsageState:
     """Mutable handle the handler uses to describe what it did."""
 
-    __slots__ = ("provider", "failed")
+    __slots__ = ("provider", "failed", "billable")
 
     def __init__(self) -> None:
         self.provider: str | None = None
         self.failed: bool = False
+        self.billable: bool = True
+
+    def not_billable(self) -> None:
+        """Mark a request that never reached a provider (e.g. a 503 because
+        none is configured) so it is not counted against the consumer's quota —
+        the quota is a spend control, and no upstream was reached."""
+        self.billable = False
 
 
 @asynccontextmanager
@@ -66,7 +73,8 @@ async def usage_tracker(db: AsyncSession, consumer_id: uuid.UUID, endpoint: str)
     The handler may set ``state.provider`` to name the provider that actually
     answered (``"cache"``, ``"miss"``, ``"google"``, …). If it does not, a
     failed request is recorded as ``"error"`` and a successful one as
-    ``"unknown"``.
+    ``"unknown"``. The handler may call ``state.not_billable()`` for a request
+    that never reached a provider (a 503) so it is not charged.
 
     Accounting never turns a working request into a failure: a write error
     here is logged and swallowed.
@@ -78,18 +86,23 @@ async def usage_tracker(db: AsyncSession, consumer_id: uuid.UUID, endpoint: str)
         state.failed = True
         raise
     finally:
-        provider = state.provider or ("error" if state.failed else "unknown")
-        try:
-            if state.failed:
-                # Clear any transaction the handler left in a failed state, so
-                # the counter insert can run.
-                await db.rollback()
-            await record_usage(db, consumer_id, endpoint, provider)
-        except Exception:
-            logger.warning(
-                "Could not record Maps usage for %s (provider=%s)", endpoint, provider,
-                exc_info=True,
-            )
+        # ``return`` in a finally would swallow the exception the handler is
+        # raising, so the skip is a guard, not an early return: when a request
+        # never reached a provider (a 503) we simply don't record it — but the
+        # 503 still propagates.
+        if state.billable:
+            provider = state.provider or ("error" if state.failed else "unknown")
+            try:
+                if state.failed:
+                    # Clear any transaction the handler left in a failed state,
+                    # so the counter insert can run.
+                    await db.rollback()
+                await record_usage(db, consumer_id, endpoint, provider)
+            except Exception:
+                logger.warning(
+                    "Could not record Maps usage for %s (provider=%s)", endpoint, provider,
+                    exc_info=True,
+                )
 
 
 async def monthly_request_count(db: AsyncSession, consumer_id: uuid.UUID) -> int:

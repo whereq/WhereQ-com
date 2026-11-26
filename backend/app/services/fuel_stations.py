@@ -491,6 +491,32 @@ def is_due(state: FuelSyncState | None, interval_hours: int) -> bool:
     return age >= timedelta(hours=interval_hours)
 
 
+_EPOCH = datetime.min.replace(tzinfo=timezone.utc)
+
+
+def _rotation_order(state: FuelSyncState | None) -> datetime:
+    """Sort key for the round-robin: the last time we *touched* a target.
+
+    The key is the last **attempt**, not the last success. ``record_sync``
+    advances ``last_attempt_at`` on every try (success or failure) and only
+    advances ``last_synced_at`` on success, so the attempt is always the later
+    of the two — it is the true "last touched" moment.
+
+    It has to be the attempt: a target that synced once and then kept failing
+    has a *stale* ``last_synced_at`` that never moves, so a key taken from it
+    would pin that target at the front of the queue for ever and starve every
+    target behind it (``is_due`` keeps it due for ever, because a failed sync
+    is always retried). With the attempt as the key, each failure moves the
+    target to the back and the queue rotates.
+
+    ``last_synced_at`` is only the fallback, for rows written before
+    ``last_attempt_at`` existed.
+    """
+    if state is None:
+        return _EPOCH
+    return state.last_attempt_at or state.last_synced_at or _EPOCH
+
+
 async def record_sync(db: AsyncSession, target: FuelTarget, *,
                       station_count: int, error: str | None = None) -> None:
     """Persist the outcome of a target sync."""
@@ -525,6 +551,5 @@ async def due_targets(db: AsyncSession, targets: list[FuelTarget] | None = None,
     interval = interval_hours if interval_hours is not None else settings.FUEL_INGEST_INTERVAL_HOURS
     states = await sync_states(db)
     due = [t for t in targets if is_due(states.get(t.key), interval)]
-    due.sort(key=lambda t: (states[t.key].last_synced_at if t.key in states and
-                             states[t.key].last_synced_at else datetime.min.replace(tzinfo=timezone.utc)))
+    due.sort(key=lambda t: _rotation_order(states.get(t.key)))
     return due
