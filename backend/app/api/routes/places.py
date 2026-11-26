@@ -2,7 +2,7 @@ import logging
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import and_, func, or_, select
+from sqlalchemy import and_, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -44,6 +44,19 @@ router = APIRouter(prefix="/places", tags=["places"])
 #: Metadata keys that carry the live fuel price payload (whereq.cloud).
 PRICE_META_KEYS = ("prices", "observed_at")
 
+#: Metadata keys that carry the **upstream provenance** — which feed the row
+#: came from, and that feed's own id for the station. It is our supply chain,
+#: not the place: no client reads either key, and the station's identity is
+#: already public in the `id` field (a live station's id is the negative of
+#: the upstream's). So an anonymous caller gets neither.
+PROVENANCE_META_KEYS = ("data_source", "station_id")
+
+#: What an **anonymous** caller may see of a fuel station: the place's own
+#: facts. The prices are licensed and need a session; the provenance is ours.
+PUBLIC_STATION_META_KEYS = (
+    "brand", "state", "state_iso", "municipality", "currency", "unit",
+)
+
 
 def _parse_bbox(bbox: str | None):
     """bbox = 'minLng,minLat,maxLng,maxLat' → tuple or None."""
@@ -61,10 +74,24 @@ def _csv(value: str | None) -> list[str]:
 
 
 def _without_prices(meta: dict | None) -> dict | None:
-    """Strip the live price payload out of a metadata blob."""
-    if not isinstance(meta, dict) or not any(k in meta for k in PRICE_META_KEYS):
+    """Strip the licensed price payload and the upstream provenance.
+
+    The prices come from whereq.cloud (metered, licensed) and are served to
+    signed-in users only. The provenance — which upstream feed supplied the row
+    and what that feed calls the station — is our supply chain, and no client
+    reads it, so it goes out to an anonymous caller neither.
+
+    This is the **stored**-row path, where the blob may also hold ordinary OSM
+    tags (operator, cuisine, website…), so the two licensed/provenance keys
+    are removed rather than the whole shape rebuilt. The live-station path
+    builds its own dict and uses :data:`PUBLIC_STATION_META_KEYS` instead.
+    """
+    if not isinstance(meta, dict):
         return meta
-    return {k: v for k, v in meta.items() if k not in PRICE_META_KEYS}
+    hidden = PRICE_META_KEYS + PROVENANCE_META_KEYS
+    if not any(k in meta for k in hidden):
+        return meta
+    return {k: v for k, v in meta.items() if k not in hidden}
 
 
 def _read(place: Place, *, include_prices: bool) -> PlaceRead:
@@ -365,12 +392,25 @@ async def get_place(
     if place_id < 0:
         return await _live_fuel_place(place_id, user is not None)
 
-    place = await db.get(Place, place_id)
-    if not place:
+    # One statement for the whole read-and-count. The old code read the row,
+    # added 1 in Python, committed, then re-read it with `db.refresh()` — three
+    # statements and a round trip per view, and a **lost update**: two
+    # concurrent readers both read 10 and both wrote 11. `view_count + 1` in the
+    # UPDATE is atomic, and `RETURNING` hands the new row back in the same
+    # statement, so the response needs no second SELECT.
+    #
+    # `synchronize_session=False` keeps SQLAlchemy from walking the session;
+    # the row it returns is not dirty, so the commit writes it exactly once.
+    place = (await db.execute(
+        update(Place)
+        .where(Place.id == place_id)
+        .values(view_count=Place.view_count + 1)
+        .returning(Place)
+        .execution_options(synchronize_session=False)
+    )).scalars().first()
+    if place is None:
         raise HTTPException(status_code=404, detail="Place not found")
-    place.view_count += 1
     await db.commit()
-    await db.refresh(place)
     return _read(place, include_prices=user is not None)
 
 
@@ -407,7 +447,10 @@ async def _live_fuel_place(place_id: int, include_prices: bool) -> PlaceRead:
         "station_id": station.get("id"),
     }
     if not include_prices:
-        meta = _without_prices(meta)
+        # The anonymous caller gets the place's own facts and nothing else:
+        # not the prices (licensed), and not which upstream feed supplied them.
+        # The dict is built here, so the allowlist is exact.
+        meta = {k: meta[k] for k in PUBLIC_STATION_META_KEYS}
 
     return PlaceRead(
         id=place_id,

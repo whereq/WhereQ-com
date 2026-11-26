@@ -35,16 +35,27 @@ async def list_friends(
     result = await db.execute(q)
     friendships = result.scalars().all()
 
+    # One query for every friend's row, not one per friendship. The old code
+    # did `db.get(User, fid)` inside the loop, so a user with 40 friends paid
+    # 40 round trips to read 40 usernames.
+    friend_ids = {f.friend_id if f.user_id == current_user.id else f.user_id
+                  for f in friendships}
+    usernames: dict[int, str] = {}
+    if friend_ids:
+        rows = await db.execute(
+            select(User.id, User.username).where(User.id.in_(friend_ids))
+        )
+        usernames = {uid: username for uid, username in rows.all()}
+
     out = []
     for f in friendships:
         fid = f.friend_id if f.user_id == current_user.id else f.user_id
-        friend = await db.get(User, fid)
         out.append(FriendshipOut(
             id=f.id,
             user_id=f.user_id,
             friend_id=f.friend_id,
             status=f.status,
-            friend_username=friend.username if friend else None,
+            friend_username=usernames.get(fid),
         ))
     return out
 

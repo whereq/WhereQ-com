@@ -186,7 +186,13 @@ async def local_detail(content_id: int, db: AsyncSession = Depends(get_db)):
     c = (await db.execute(
         select(LocalContent).where(LocalContent.id == content_id)
         .options(selectinload(LocalContent.tags)))).scalar_one_or_none()
-    if c is None or c.status in ("hidden",):
+    # The list, the search and the map all serve `status == "active"` only, so
+    # the detail read must not be a way around that: an expired row (the
+    # retention sweep flips stale rows to "expired") and a hidden row are both
+    # 404, not a full article. Measured on PROD: 6,506 expired rows against
+    # 754 active — without this, 89 % of the corpus was publicly reachable by
+    # guessing an id while being invisible everywhere else.
+    if c is None or c.status != "active":
         raise HTTPException(status_code=404, detail="Content not found")
     return LocalContentDetail(
         id=c.id, type=c.type, category=c.category, title=c.title,
