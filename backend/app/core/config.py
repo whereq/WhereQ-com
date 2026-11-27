@@ -292,6 +292,16 @@ class Settings(BaseSettings):
     # be fooled by a simplified edge.
     GEO_BOUNDARY_SIMPLIFY_M: float = 50.0
 
+    # ── Maintenance ──────────────────────────────────────────────────────────
+    # The GiST indexes on `places` and `local_content` bloat because the
+    # upstream restamps every row every week: GiST never returns the pages the
+    # dead entries occupy. The index grows — on PROD `ix_places_geom` had
+    # reached 18,136 kB against the 3,456 kB of a fresh build of the same
+    # index. `python -m app.maintenance.reindex` rebuilds an index when it has
+    # grown past this multiple of a fresh build of itself; the multiple is a
+    # judgement, the measurement behind it is not.
+    MAINTENANCE_REINDEX_GROWTH_RATIO: float = 2.0
+
     # ── Aggregated fuel price series (whereq.cloud) ─────────────────────────
     # State/national/metro averages behind the charts: EIA weekly for the US,
     # StatCan monthly for Canada, CRE for Mexico. Refreshed far less often
