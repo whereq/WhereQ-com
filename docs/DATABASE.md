@@ -132,7 +132,7 @@ Here is what each one is for.
 
 ## The shape of the spatial data
 
-Three tables carry geometry:
+Four tables carry geometry:
 
 | Table | Geometry | Why |
 |---|---|---|
@@ -148,6 +148,49 @@ reprojection is needed between the map and the database.
 > outline for transport, it does so on the way out
 > (`GEO_BOUNDARY_SIMPLIFY_M`) — the point-in-polygon test must not be fooled
 > by a simplified edge.
+
+### Maintaining the spatial indexes
+
+If you collect content on a schedule, the GiST indexes on your tables will
+grow: every row that is rewritten leaves a dead index entry behind, and GiST
+never returns the pages those entries occupy. The index gets bigger while its
+live data stays the same.
+
+```bash
+# Report — what is bloated, and what would be rebuilt. Changes nothing.
+python -m app.maintenance.reindex --dry-run
+
+# Rebuild the bloated ones
+python -m app.maintenance.reindex
+```
+
+The tool rebuilds an index when it has grown past **2× a fresh build of the
+index itself** (`MAINTENANCE_REINDEX_GROWTH_RATIO`). It builds that baseline
+on the spot, on a temporary copy of the table's geometry column, so the
+comparison is a measurement rather than a guess.
+
+Do **not** decide this by the share of free space or by the tuple count — both
+are wrong for a GiST index. Free space is a property of the *data*: a fresh
+geography index on `local_content` is 89.5 % free, more than a bloated plain
+index ever sat at. And GiST only marks an entry dead once a VACUUM has
+visited the index, so an index that was never vacuumed reports its dead
+entries as live tuples. The threshold is a ratio rather than an equality
+because GiST's packing is not deterministic — two fresh builds of the same
+index on the same data came out 38 % apart.
+
+The rebuild is `REINDEX INDEX CONCURRENTLY`, which takes only a
+`SHARE UPDATE EXCLUSIVE` lock: reads and writes continue, and the rows are
+never rewritten. The **heap** is not touched — `VACUUM FULL` would be, and it
+takes an `ACCESS EXCLUSIVE` lock that blocks every read and write.
+
+The measurement comes from the `pgstattuple` extension:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS pgstattuple;
+```
+
+Without it the tool reports the sizes and rebuilds nothing, unless `--force`
+is given.
 
 ---
 
