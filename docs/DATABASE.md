@@ -162,12 +162,23 @@ python -m app.maintenance.reindex --dry-run
 
 # Rebuild the bloated ones
 python -m app.maintenance.reindex
+
+# One index only, or override the thresholds
+python -m app.maintenance.reindex --index ix_places_geom
+python -m app.maintenance.reindex --ratio 1.5
+python -m app.maintenance.reindex --min-kb 1024
 ```
 
 The tool rebuilds an index when it has grown past **2× a fresh build of the
 index itself** (`MAINTENANCE_REINDEX_GROWTH_RATIO`). It builds that baseline
 on the spot, on a temporary copy of the table's geometry column, so the
 comparison is a measurement rather than a guess.
+
+There is a second, absolute floor: **512 kB** (`MAINTENANCE_REINDEX_MIN_KB`).
+Below it an index is never rebuilt, whatever its growth ratio says — GiST's
+packing noise can push a few-kB index past the ratio on noise alone. The
+indexes that matter are megabytes, so the floor suppresses the false
+positives without hiding anything. `--force` overrides both thresholds.
 
 Do **not** decide this by the share of free space or by the tuple count — both
 are wrong for a GiST index. Free space is a property of the *data*: a fresh
@@ -182,6 +193,19 @@ The rebuild is `REINDEX INDEX CONCURRENTLY`, which takes only a
 `SHARE UPDATE EXCLUSIVE` lock: reads and writes continue, and the rows are
 never rewritten. The **heap** is not touched — `VACUUM FULL` would be, and it
 takes an `ACCESS EXCLUSIVE` lock that blocks every read and write.
+
+**Exit codes** — so a scheduler can read them:
+
+| Code | Meaning |
+|---|---|
+| `0` | Done (including "nothing was bloated"). |
+| `1` | A rebuild failed, or the run could not read the indexes — the message says which, and names the locks to check. |
+| `2` | `--index` named an index that does not exist. |
+
+One index that could not be rebuilt is a failure of the **run** (`1`), not a
+success: the tool must never report success over a rebuild that did not
+happen. `REINDEX INDEX CONCURRENTLY` can also leave an **INVALID** index
+behind — the tool says so and gives the query that finds it.
 
 The measurement comes from the `pgstattuple` extension:
 

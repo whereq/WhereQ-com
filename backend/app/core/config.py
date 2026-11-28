@@ -301,6 +301,13 @@ class Settings(BaseSettings):
     # grown past this multiple of a fresh build of itself; the multiple is a
     # judgement, the measurement behind it is not.
     MAINTENANCE_REINDEX_GROWTH_RATIO: float = 2.0
+    #: A floor below which an index isn't worth rebuilding whatever its growth
+    #: ratio says: a near-empty table's index is a page or two, and GiST's
+    #: non-deterministic packing can swing a few-kB index past the ratio on
+    #: noise alone. The real targets (``ix_places_geom`` and friends) are
+    #: megabytes, so this floor suppresses the false positives without hiding
+    #: any index that matters.
+    MAINTENANCE_REINDEX_MIN_KB: int = 512
 
     # ── Aggregated fuel price series (whereq.cloud) ─────────────────────────
     # State/national/metro averages behind the charts: EIA weekly for the US,
